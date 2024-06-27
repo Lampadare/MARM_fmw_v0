@@ -1,0 +1,2 @@
+osource "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/boards/shields/*/Kconfig.shield"
+osource "/opt/nordic/ncs/v2.6.1/nrf/boards/shields/*/Kconfig.shield"

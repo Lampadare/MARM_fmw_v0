@@ -1,17 +1,15 @@
-/*
- * Copyright (c) 2023 Nordic Semiconductor ASA
- *
- * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
- */
-
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/gap.h>
+#include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/uuid.h>
+#include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/conn.h>
-#include <dk_buttons_and_leds.h>
-#include "my_lbs.h"
+
+#include "../inc/neuralbs.h"
+#include "../inc/device_status.h"
+#include "../inc/neural_data.h"
 
 static struct bt_le_adv_param *adv_param = BT_LE_ADV_PARAM(
 	(BT_LE_ADV_OPT_CONNECTABLE |
@@ -20,87 +18,124 @@ static struct bt_le_adv_param *adv_param = BT_LE_ADV_PARAM(
 	801,						  /* Max Advertising Interval 500.625ms (801*0.625ms) */
 	NULL);						  /* Set to NULL for undirected advertising */
 
-LOG_MODULE_REGISTER(Lesson4_Exercise2, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
-#define RUN_STATUS_LED DK_LED1
-#define CON_STATUS_LED DK_LED2
-#define USER_LED DK_LED3
-#define USER_BUTTON DK_BTN1_MSK
-
 #define STACKSIZE 1024
-#define PRIORITY 7
+#define STATUS_NOTIFY_PRIORITY 7
+#define NEURAL_DATA_NOTIFY_PRIORITY 4
+#define SYSTEM_STATUS_NOTIFY_INTERVAL 1 // system status notify interval in seconds
+#define NEURAL_DATA_INTERVAL 15			// neural data interval in milliseconds
+#define NEURAL_DATA_NOTIFY_INTERVAL 15	// neural data notify interval in milliseconds
 
-#define RUN_LED_BLINK_INTERVAL 1000
-/* STEP 17 - Define the interval at which you want to send data at */
-#define NOTIFY_INTERVAL 500
+struct bt_conn *my_conn = NULL;
+static struct bt_gatt_exchange_params exchange_params;
+static void exchange_func(struct bt_conn *conn, uint8_t att_err, struct bt_gatt_exchange_params *params);
 
-static bool app_button_state;
-/* STEP 15 - Define the data you want to stream over Bluetooth LE */
-static uint32_t app_sensor_value = 100;
+/* Fake latest neural data */
+NeuralData latest_neural_data = {
+	.channels = {{{0}}}, // Initialize all channels to zero
+	.timestamp = 0};
 
-static bool app_button_state;
+// Define and initialize the device status with default values
+DeviceStatus device_status = {
+	.battery_level = 100,
+	.temperature = 25,
+	.recording_status = true,
+	.configuration = "v0.0.1"};
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
-
 };
 
 static const struct bt_data sd[] = {
-	BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_LBS_VAL),
+	BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NBS_VAL),
 };
 
-/* STEP 16 - Define a function to simulate the data */
-static void simulate_data(void)
+static void update_phy(struct bt_conn *conn)
 {
-	app_sensor_value++;
-	if (app_sensor_value == 200)
+	int err;
+	const struct bt_conn_le_phy_param preferred_phy = {
+		.options = BT_CONN_LE_PHY_OPT_NONE,
+		.pref_rx_phy = BT_GAP_LE_PHY_2M,
+		.pref_tx_phy = BT_GAP_LE_PHY_2M,
+	};
+	err = bt_conn_le_phy_update(conn, &preferred_phy);
+	if (err)
 	{
-		app_sensor_value = 100;
+		LOG_ERR("bt_conn_le_phy_update() returned %d", err);
 	}
 }
 
-static void app_led_cb(bool led_state)
+static void update_data_length(struct bt_conn *conn)
 {
-	dk_set_led(USER_LED, led_state);
+	int err;
+	struct bt_conn_le_data_len_param my_data_len = {
+		.tx_max_len = BT_GAP_DATA_LEN_MAX,
+		.tx_max_time = BT_GAP_DATA_TIME_MAX,
+	};
+	err = bt_conn_le_data_len_update(my_conn, &my_data_len);
+	if (err)
+	{
+		LOG_ERR("data_len_update failed (err %d)", err);
+	}
 }
 
-static bool app_button_cb(void)
+static void update_mtu(struct bt_conn *conn)
 {
-	return app_button_state;
+	int err;
+	exchange_params.func = exchange_func;
+
+	err = bt_gatt_exchange_mtu(conn, &exchange_params);
+	if (err)
+	{
+		LOG_ERR("bt_gatt_exchange_mtu failed (err %d)", err);
+	}
 }
 
-/* STEP 18.1 - Define the thread function  */
-void send_data_thread(void)
+// Function to get the current time in milliseconds since the start of the 12-hour period
+uint32_t get_current_timestamp()
+{
+	int64_t uptime_ms = k_uptime_get();
+	uint32_t timestamp = (uint32_t)(uptime_ms % (12 * 60 * 60 * 1000)); // 12 hours in milliseconds
+	return timestamp;
+}
+
+// Function to update the neural data
+void update_neural_data()
+{
+	for (int i = 0; i < MAX_CHANNELS; i++)
+	{
+		for (int j = 0; j < MAX_BYTES_PER_CHANNEL; j++)
+		{
+			latest_neural_data.channels[i].data[j]++;
+			if (latest_neural_data.channels[i].data[j] == 200)
+			{
+				latest_neural_data.channels[i].data[j] = 0;
+			}
+		}
+	}
+	latest_neural_data.timestamp = get_current_timestamp();
+}
+
+void status_notify_thread(void)
 {
 	while (1)
 	{
-		/* Simulate data */
-		simulate_data();
-		/* Send notification, the function sends notifications only if a client is subscribed */
-		my_lbs_send_sensor_notify(app_sensor_value);
-
-		k_sleep(K_MSEC(NOTIFY_INTERVAL));
+		nbs_send_system_status_notify(&device_status);
+		k_sleep(K_SECONDS(SYSTEM_STATUS_NOTIFY_INTERVAL));
 	}
 }
 
-static struct my_lbs_cb app_callbacks = {
-	.led_cb = app_led_cb,
-	.button_cb = app_button_cb,
-};
-
-static void button_changed(uint32_t button_state, uint32_t has_changed)
+void neural_data_notify_thread(void)
 {
-	if (has_changed & USER_BUTTON)
+	while (1)
 	{
-		uint32_t user_button_state = button_state & USER_BUTTON;
-		/* STEP 6 - Send indication on a button press */
-		my_lbs_send_button_state_indicate(user_button_state);
-
-		app_button_state = user_button_state ? true : false;
+		nbs_send_neural_data_notify(&latest_neural_data);
+		k_sleep(K_MSEC(NEURAL_DATA_NOTIFY_INTERVAL));
 	}
 }
 
@@ -112,56 +147,88 @@ static void on_connected(struct bt_conn *conn, uint8_t err)
 		return;
 	}
 
-	printk("Connected\n");
+	my_conn = bt_conn_ref(conn);
+	struct bt_conn_info info;
+	err = bt_conn_get_info(conn, &info);
+	if (err)
+	{
+		LOG_ERR("bt_conn_get_info() returned %d", err);
+		return;
+	}
 
-	dk_set_led_on(CON_STATUS_LED);
+	double connection_interval = info.le.interval * 1.25; // in ms
+	uint16_t supervision_timeout = info.le.timeout * 10;  // in ms
+	LOG_INF("Connection parameters: interval %.2f ms, latency %d intervals, timeout %d ms", connection_interval, info.le.latency, supervision_timeout);
+
+	update_phy(my_conn);
+	update_data_length(my_conn);
+	update_mtu(my_conn);
+
+	printk("Connected\n");
 }
 
 static void on_disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	printk("Disconnected (reason %u)\n", reason);
+}
 
-	dk_set_led_off(CON_STATUS_LED);
+void on_le_param_updated(struct bt_conn *conn, uint16_t interval, uint16_t latency, uint16_t timeout)
+{
+	double connection_interval = interval * 1.25; // in ms
+	uint16_t supervision_timeout = timeout * 10;  // in ms
+	LOG_INF("Connection parameters updated: interval %.2f ms, latency %d intervals, timeout %d ms", connection_interval, latency, supervision_timeout);
+}
+
+void on_le_phy_updated(struct bt_conn *conn, struct bt_conn_le_phy_info *param)
+{
+	// PHY Updated
+	if (param->tx_phy == BT_CONN_LE_TX_POWER_PHY_1M)
+	{
+		LOG_INF("PHY updated. New PHY: 1M");
+	}
+	else if (param->tx_phy == BT_CONN_LE_TX_POWER_PHY_2M)
+	{
+		LOG_INF("PHY updated. New PHY: 2M");
+	}
+	else if (param->tx_phy == BT_CONN_LE_TX_POWER_PHY_CODED_S8)
+	{
+		LOG_INF("PHY updated. New PHY: Long Range");
+	}
+}
+
+void on_le_data_len_updated(struct bt_conn *conn, struct bt_conn_le_data_len_info *info)
+{
+	uint16_t tx_len = info->tx_max_len;
+	uint16_t tx_time = info->tx_max_time;
+	uint16_t rx_len = info->rx_max_len;
+	uint16_t rx_time = info->rx_max_time;
+	LOG_INF("Data length updated. Length %d/%d bytes, time %d/%d us", tx_len, rx_len, tx_time, rx_time);
+}
+
+static void exchange_func(struct bt_conn *conn, uint8_t att_err,
+						  struct bt_gatt_exchange_params *params)
+{
+	LOG_INF("MTU exchange %s", att_err == 0 ? "successful" : "failed");
+	if (!att_err)
+	{
+		uint16_t payload_mtu = bt_gatt_get_mtu(conn) - 3; // 3 bytes used for Attribute headers.
+		LOG_INF("New MTU: %d bytes", payload_mtu);
+	}
 }
 
 struct bt_conn_cb connection_callbacks = {
 	.connected = on_connected,
 	.disconnected = on_disconnected,
+	.le_param_updated = on_le_param_updated,
+	.le_phy_updated = on_le_phy_updated,
+	.le_data_len_updated = on_le_data_len_updated,
 };
-
-static int init_button(void)
-{
-	int err;
-
-	err = dk_buttons_init(button_changed);
-	if (err)
-	{
-		printk("Cannot init buttons (err: %d)\n", err);
-	}
-
-	return err;
-}
 
 int main(void)
 {
-	int blink_status = 0;
 	int err;
 
-	LOG_INF("Starting Lesson 4 - Exercise 2 \n");
-
-	err = dk_leds_init();
-	if (err)
-	{
-		LOG_ERR("LEDs init failed (err %d)\n", err);
-		return -1;
-	}
-
-	err = init_button();
-	if (err)
-	{
-		printk("Button init failed (err %d)\n", err);
-		return -1;
-	}
+	LOG_INF("Marmoset FMW V0 \n");
 
 	err = bt_enable(NULL);
 	if (err)
@@ -171,12 +238,6 @@ int main(void)
 	}
 	bt_conn_cb_register(&connection_callbacks);
 
-	err = my_lbs_init(&app_callbacks);
-	if (err)
-	{
-		printk("Failed to init LBS (err:%d)\n", err);
-		return -1;
-	}
 	LOG_INF("Bluetooth initialized\n");
 	err = bt_le_adv_start(adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 	if (err)
@@ -189,11 +250,15 @@ int main(void)
 
 	for (;;)
 	{
-		dk_set_led(RUN_STATUS_LED, (++blink_status) % 2);
-		k_sleep(K_MSEC(RUN_LED_BLINK_INTERVAL));
+		update_neural_data();
+		k_sleep(K_MSEC(NEURAL_DATA_INTERVAL));
 	}
 }
 
 /* STEP 18.2 - Define and initialize a thread to send data periodically */
-K_THREAD_DEFINE(send_data_thread_id, STACKSIZE, send_data_thread, NULL, NULL,
-				NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(neural_data_notify_thread_id, STACKSIZE, neural_data_notify_thread, NULL, NULL,
+				NULL, NEURAL_DATA_NOTIFY_PRIORITY, 0, 0);
+
+/* STEP 18.2 - Define and initialize a thread to send data periodically */
+K_THREAD_DEFINE(status_notify_thread_id, STACKSIZE, status_notify_thread, NULL, NULL,
+				NULL, STATUS_NOTIFY_PRIORITY, 0, 0);

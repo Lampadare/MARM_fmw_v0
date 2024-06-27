@@ -1,3 +1,10 @@
 {
-  "nrf-connect.applications": ["${workspaceFolder}"]
+  "nrf-connect.applications": ["${workspaceFolder}"],
+  "files.associations": {
+    "log.h": "c",
+    "neural_data.h": "c",
+    "uuid.h": "c",
+    "hci.h": "c",
+    "types.h": "c"
+  }
 }
