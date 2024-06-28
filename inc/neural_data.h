@@ -23,6 +23,5 @@ typedef struct
 
 // Declare the global variable
 extern NeuralData latest_neural_data;
-extern struct k_fifo neural_fifo;
 
 #endif // NEURAL_DATA_H

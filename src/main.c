@@ -10,6 +10,8 @@
 #include "../inc/neuralbs.h"
 #include "../inc/device_status.h"
 #include "../inc/neural_data.h"
+#include "../inc/fifo_buffer.h"
+#include "../inc/fakedata_module.h"
 
 static struct bt_le_adv_param *adv_param = BT_LE_ADV_PARAM(
 	(BT_LE_ADV_OPT_CONNECTABLE |
@@ -23,16 +25,19 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
-#define STACKSIZE 1024
-#define STATUS_NOTIFY_PRIORITY 7
+#define STACKSIZE 2048
+#define STATUS_NOTIFY_PRIORITY 5
 #define NEURAL_DATA_NOTIFY_PRIORITY 4
+#define FAKEDATA_THREAD_PRIORITY 3
+
 #define SYSTEM_STATUS_NOTIFY_INTERVAL 1 // system status notify interval in seconds
-#define NEURAL_DATA_INTERVAL 15			// neural data interval in milliseconds
-#define NEURAL_DATA_NOTIFY_INTERVAL 15	// neural data notify interval in milliseconds
+#define NEURAL_DATA_NOTIFY_INTERVAL 4	// neural data notify interval in milliseconds
 
 struct bt_conn *my_conn = NULL;
 static struct bt_gatt_exchange_params exchange_params;
 static void exchange_func(struct bt_conn *conn, uint8_t att_err, struct bt_gatt_exchange_params *params);
+
+static fifo_buffer_t fifo_buffer;
 
 /* Fake latest neural data */
 NeuralData latest_neural_data = {
@@ -96,30 +101,30 @@ static void update_mtu(struct bt_conn *conn)
 	}
 }
 
-// Function to get the current time in milliseconds since the start of the 12-hour period
-uint32_t get_current_timestamp()
-{
-	int64_t uptime_ms = k_uptime_get();
-	uint32_t timestamp = (uint32_t)(uptime_ms % (12 * 60 * 60 * 1000)); // 12 hours in milliseconds
-	return timestamp;
-}
+// // Function to get the current time in milliseconds since the start of the 12-hour period
+// uint32_t get_current_timestamp()
+// {
+// 	int64_t uptime_ms = k_uptime_get();
+// 	uint32_t timestamp = (uint32_t)(uptime_ms % (12 * 60 * 60 * 1000)); // 12 hours in milliseconds
+// 	return timestamp;
+// }
 
-// Function to update the neural data
-void update_neural_data()
-{
-	for (int i = 0; i < MAX_CHANNELS; i++)
-	{
-		for (int j = 0; j < MAX_BYTES_PER_CHANNEL; j++)
-		{
-			latest_neural_data.channels[i].data[j]++;
-			if (latest_neural_data.channels[i].data[j] == 200)
-			{
-				latest_neural_data.channels[i].data[j] = 0;
-			}
-		}
-	}
-	latest_neural_data.timestamp = get_current_timestamp();
-}
+// // Function to update the neural data
+// void update_neural_data()
+// {
+// 	for (int i = 0; i < MAX_CHANNELS; i++)
+// 	{
+// 		for (int j = 0; j < MAX_BYTES_PER_CHANNEL; j++)
+// 		{
+// 			latest_neural_data.channels[i].data[j]++;
+// 			if (latest_neural_data.channels[i].data[j] == 200)
+// 			{
+// 				latest_neural_data.channels[i].data[j] = 0;
+// 			}
+// 		}
+// 	}
+// 	latest_neural_data.timestamp = get_current_timestamp();
+// }
 
 void status_notify_thread(void)
 {
@@ -248,10 +253,16 @@ int main(void)
 
 	LOG_INF("Advertising successfully started\n");
 
+	LOG_INF("Initializing FIFO buffer...");
+	init_fifo_buffer(&fifo_buffer);
+
+	LOG_INF("All systems initialized\n");
+
 	for (;;)
 	{
-		update_neural_data();
-		k_sleep(K_MSEC(NEURAL_DATA_INTERVAL));
+		// update_neural_data();
+		// k_sleep(K_MSEC(NEURAL_DATA_INTERVAL));
+		k_sleep(K_SECONDS(10));
 	}
 }
 
@@ -262,3 +273,6 @@ K_THREAD_DEFINE(neural_data_notify_thread_id, STACKSIZE, neural_data_notify_thre
 /* STEP 18.2 - Define and initialize a thread to send data periodically */
 K_THREAD_DEFINE(status_notify_thread_id, STACKSIZE, status_notify_thread, NULL, NULL,
 				NULL, STATUS_NOTIFY_PRIORITY, 0, 0);
+
+K_THREAD_DEFINE(fakedata_thread_id, FAKEDATA_THREAD_STACK_SIZE, fakedata_thread, &fifo_buffer, NULL,
+				NULL, FAKEDATA_THREAD_PRIORITY, 0, 20000);

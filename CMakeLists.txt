@@ -10,6 +10,8 @@ include_directories(${CMAKE_SOURCE_DIR}/inc)
 target_sources(app PRIVATE
   src/main.c
   src/neuralbs.c
+  src/fakedata_module.c
+  src/fifo_buffer.c
 )
 
 # NORDIC SDK APP END

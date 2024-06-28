@@ -5,6 +5,7 @@
     "neural_data.h": "c",
     "uuid.h": "c",
     "hci.h": "c",
-    "types.h": "c"
+    "types.h": "c",
+    "fifo_buffer.h": "c"
   }
 }
