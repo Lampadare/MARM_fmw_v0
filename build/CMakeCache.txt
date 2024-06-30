@@ -319,7 +319,7 @@ DTC:FILEPATH=/opt/nordic/ncs/toolchains/580e4ef81c/bin/dtc
 // parameter. These settings will override the settings in the
 // board's .dts file. Multiple files may be listed, e.g. DTC_OVERLAY_FILE="dts1.overlay
 // dts2.overlay"
-DTC_OVERLAY_FILE:STRING=
+DTC_OVERLAY_FILE:STRING=/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/nrf52840dk_nrf52840.overlay
 
 //Linker BFD compatibility (compiler reported)
 GNULD_LINKER_IS_BFD:BOOL=ON

@@ -6,6 +6,7 @@
     "uuid.h": "c",
     "hci.h": "c",
     "types.h": "c",
-    "fifo_buffer.h": "c"
+    "fifo_buffer.h": "c",
+    "devicetree.h": "c"
   }
 }

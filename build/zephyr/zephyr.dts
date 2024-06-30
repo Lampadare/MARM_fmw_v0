@@ -194,7 +194,7 @@
 			interrupts = < 0x7 0x1 >;
 			status = "okay";
 			#io-channel-cells = < 0x1 >;
-			phandle = < 0x1c >;
+			phandle = < 0x1b >;
 		};
 		timer0: timer@40008000 {
 			compatible = "nordic,nrf-timer";
@@ -349,7 +349,7 @@
 			pinctrl-0 = < &pwm0_default >;
 			pinctrl-1 = < &pwm0_sleep >;
 			pinctrl-names = "default", "sleep";
-			phandle = < 0x1a >;
+			phandle = < 0x19 >;
 		};
 		pdm0: pdm@4001d000 {
 			compatible = "nordic,nrf-pdm";
@@ -478,7 +478,7 @@
 			reg = < 0x40029000 0x1000 >, < 0x12000000 0x8000000 >;
 			reg-names = "qspi", "qspi_mm";
 			interrupts = < 0x29 0x1 >;
-			status = "okay";
+			status = "disabled";
 			pinctrl-0 = < &qspi_default >;
 			pinctrl-1 = < &qspi_sleep >;
 			pinctrl-names = "default", "sleep";
@@ -514,10 +514,17 @@
 			rx-delay-supported;
 			rx-delay = < 0x2 >;
 			status = "okay";
-			cs-gpios = < &arduino_header 0x10 0x1 >;
+			cs-gpios = < &gpio0 0xc 0x1 >;
 			pinctrl-0 = < &spi3_default >;
 			pinctrl-1 = < &spi3_sleep >;
 			pinctrl-names = "default", "sleep";
+			sdhc0: sdhc@0 {
+				compatible = "zephyr,sdhc-spi-slot";
+				status = "okay";
+				reg = < 0x0 >;
+				label = "SD_CARD";
+				spi-max-frequency = < 0x16e3600 >;
+			};
 		};
 		gpio0: gpio@50000000 {
 			compatible = "nordic,nrf-gpio";
@@ -529,7 +536,7 @@
 			gpiote-instance = < &gpiote >;
 			gpio-reserved-ranges = < 0x0 0x2 >, < 0x6 0x1 >, < 0x8 0x3 >, < 0x11 0x7 >;
 			gpio-line-names = "XL1", "XL2", "AREF", "A0", "A1", "RTS", "TXD", "CTS", "RXD", "NFC1", "NFC2", "BUTTON1", "BUTTON2", "LED1", "LED2", "LED3", "LED4", "QSPI CS", "RESET", "QSPI CLK", "QSPI DIO0", "QSPI DIO1", "QSPI DIO2", "QSPI DIO3", "BUTTON3", "BUTTON4", "SDA", "SCL", "A2", "A3", "A4", "A5";
-			phandle = < 0x19 >;
+			phandle = < 0x14 >;
 		};
 		gpio1: gpio@50000300 {
 			compatible = "nordic,nrf-gpio";
@@ -541,7 +548,7 @@
 			port = < 0x1 >;
 			gpiote-instance = < &gpiote >;
 			gpio-line-names = "", "D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "", "D8", "D9", "D10", "D11", "D12", "D13";
-			phandle = < 0x1b >;
+			phandle = < 0x1a >;
 		};
 		cryptocell: crypto@5002a000 {
 			compatible = "nordic,cryptocell", "arm,cryptocell-310";
@@ -780,7 +787,6 @@
 		gpio-map-mask = < 0xffffffff 0xffffffc0 >;
 		gpio-map-pass-thru = < 0x0 0x3f >;
 		gpio-map = < 0x0 0x0 &gpio0 0x3 0x0 >, < 0x1 0x0 &gpio0 0x4 0x0 >, < 0x2 0x0 &gpio0 0x1c 0x0 >, < 0x3 0x0 &gpio0 0x1d 0x0 >, < 0x4 0x0 &gpio0 0x1e 0x0 >, < 0x5 0x0 &gpio0 0x1f 0x0 >, < 0x6 0x0 &gpio1 0x1 0x0 >, < 0x7 0x0 &gpio1 0x2 0x0 >, < 0x8 0x0 &gpio1 0x3 0x0 >, < 0x9 0x0 &gpio1 0x4 0x0 >, < 0xa 0x0 &gpio1 0x5 0x0 >, < 0xb 0x0 &gpio1 0x6 0x0 >, < 0xc 0x0 &gpio1 0x7 0x0 >, < 0xd 0x0 &gpio1 0x8 0x0 >, < 0xe 0x0 &gpio1 0xa 0x0 >, < 0xf 0x0 &gpio1 0xb 0x0 >, < 0x10 0x0 &gpio1 0xc 0x0 >, < 0x11 0x0 &gpio1 0xd 0x0 >, < 0x12 0x0 &gpio1 0xe 0x0 >, < 0x13 0x0 &gpio1 0xf 0x0 >, < 0x14 0x0 &gpio0 0x1a 0x0 >, < 0x15 0x0 &gpio0 0x1b 0x0 >;
-		phandle = < 0x14 >;
 	};
 	arduino_adc: analog-connector {
 		compatible = "arduino,uno-adc";

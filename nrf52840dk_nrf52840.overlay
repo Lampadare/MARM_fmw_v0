@@ -1,0 +1,21 @@
+&qspi {
+	status = "disabled";
+};
+
+&pwm0 {
+    status = "disabled";
+    label = "PWM-button";
+};
+
+&spi3 {
+    status = "okay";
+    cs-gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
+
+    sdhc0: sdhc@0 {
+        compatible = "zephyr,sdhc-spi-slot";
+		status = "okay";
+        reg = <0>;
+        label = "SD_CARD";
+        spi-max-frequency = <24000000>;
+	};
+};
