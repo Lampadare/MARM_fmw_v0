@@ -1193,9 +1193,13 @@ zephyr_udc0: &usbd {
 };
 # 0 "<command-line>" 2
 # 1 "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/nrf52840dk_nrf52840.overlay" 1
-# 16 "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/nrf52840dk_nrf52840.overlay"
 &qspi {
  status = "disabled";
+};
+
+&pwm0 {
+    status = "disabled";
+    label = "PWM-button";
 };
 
 &spi3 {

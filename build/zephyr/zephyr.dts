@@ -344,11 +344,12 @@
 			compatible = "nordic,nrf-pwm";
 			reg = < 0x4001c000 0x1000 >;
 			interrupts = < 0x1c 0x1 >;
-			status = "okay";
+			status = "disabled";
 			#pwm-cells = < 0x3 >;
 			pinctrl-0 = < &pwm0_default >;
 			pinctrl-1 = < &pwm0_sleep >;
 			pinctrl-names = "default", "sleep";
+			label = "PWM-button";
 			phandle = < 0x19 >;
 		};
 		pdm0: pdm@4001d000 {

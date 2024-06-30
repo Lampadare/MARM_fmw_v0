@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2018 Nordic Semiconductor ASA
- *
- * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
- */
-
 #include "sd_card.h"
 
 #include <zephyr/kernel.h>
@@ -16,7 +10,7 @@
 #include <zephyr/devicetree.h>
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(sd_card, CONFIG_MODULE_SD_CARD_LOG_LEVEL);
+LOG_MODULE_REGISTER(sd_card, CONFIG_SD_LOG_LEVEL); // different in sample code, was CONFIG_MODULE_SD_CARD_LOG_LEVEL, for module specific Kconfig files
 
 #define SD_ROOT_PATH "/SD:/"
 /* Maximum length for path support by Windows file system */

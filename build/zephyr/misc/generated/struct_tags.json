@@ -1,17 +1,18 @@
 {
     "__net_socket": [
-        "modem_socket",
         "dispatcher_context",
         "spair",
         "net_mgmt_socket",
         "tls_context",
         "websocket_context",
-        "net_context"
+        "net_context",
+        "modem_socket"
     ],
     "__subsystem": [
         "entropy_driver_api",
         "gpio_driver_api",
         "uart_driver_api",
+        "spi_driver_api",
         "crypto_driver_api",
         "adc_driver_api",
         "auxdisplay_driver_api",
@@ -56,7 +57,6 @@
         "sdhc_driver_api",
         "sensor_driver_api",
         "smbus_driver_api",
-        "spi_driver_api",
         "syscon_driver_api",
         "w1_driver_api",
         "wdt_driver_api",

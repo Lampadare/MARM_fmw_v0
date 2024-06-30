@@ -425,6 +425,22 @@
     ],
     [
         [
+            "int spi_transceive",
+            "const struct device *dev,\n\t\t\t     const struct spi_config *config,\n\t\t\t     const struct spi_buf_set *tx_bufs,\n\t\t\t     const struct spi_buf_set *rx_bufs"
+        ],
+        "spi.h",
+        true
+    ],
+    [
+        [
+            "int spi_release",
+            "const struct device *dev,\n\t\t\t  const struct spi_config *config"
+        ],
+        "spi.h",
+        true
+    ],
+    [
+        [
             "const struct device *device_get_binding",
             "const char *name"
         ],
@@ -3205,22 +3221,6 @@
             "const struct device *dev,\n\t\t\t\tuint16_t addr, uint8_t cmd,\n\t\t\t\tuint8_t snd_count, uint8_t *snd_buf,\n\t\t\t\tuint8_t *rcv_count, uint8_t *rcv_buf"
         ],
         "smbus.h",
-        false
-    ],
-    [
-        [
-            "int spi_transceive",
-            "const struct device *dev,\n\t\t\t     const struct spi_config *config,\n\t\t\t     const struct spi_buf_set *tx_bufs,\n\t\t\t     const struct spi_buf_set *rx_bufs"
-        ],
-        "spi.h",
-        false
-    ],
-    [
-        [
-            "int spi_release",
-            "const struct device *dev,\n\t\t\t  const struct spi_config *config"
-        ],
-        "spi.h",
         false
     ],
     [

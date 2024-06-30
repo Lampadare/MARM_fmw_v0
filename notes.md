@@ -1,5 +1,6 @@
 TODO:
 
+- make sure the prj conf works and is sufficient
 - setup SD card driver
 - Implement SD card write
 - Implement SD card thread write from fifo

@@ -144,6 +144,11 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
+  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/disk/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
   include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/net/cmake_install.cmake")
 endif()
 

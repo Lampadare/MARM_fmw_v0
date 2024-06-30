@@ -99,6 +99,7 @@
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/fb/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/fs/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/fs/CMakeFiles/edit_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/fs/CMakeFiles/subsys__fs.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/ipc/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/ipc/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/logging/CMakeFiles/rebuild_cache.dir
@@ -122,6 +123,7 @@
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/rtio/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/sd/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/sd/CMakeFiles/edit_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/sd/CMakeFiles/subsys__sd.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/stats/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/stats/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/storage/CMakeFiles/rebuild_cache.dir
@@ -146,6 +148,8 @@
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/bluetooth/services/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/bluetooth/lib/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/bluetooth/lib/CMakeFiles/edit_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/disk/CMakeFiles/rebuild_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/disk/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/net/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/net/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/subsys/net/CMakeFiles/subsys__net.dir
@@ -157,6 +161,7 @@
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/disk/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/disk/CMakeFiles/edit_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/disk/CMakeFiles/drivers__disk.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/interrupt_controller/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/interrupt_controller/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/interrupt_controller/CMakeFiles/drivers__interrupt_controller.dir
@@ -187,9 +192,15 @@
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/pinctrl/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/pinctrl/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/pinctrl/CMakeFiles/drivers__pinctrl.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/sdhc/CMakeFiles/rebuild_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/sdhc/CMakeFiles/edit_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/sdhc/CMakeFiles/drivers__sdhc.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/serial/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/serial/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/serial/CMakeFiles/drivers__serial.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/spi/CMakeFiles/rebuild_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/spi/CMakeFiles/edit_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/spi/CMakeFiles/drivers__spi.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/timer/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/timer/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/drivers/timer/CMakeFiles/drivers__timer.dir
@@ -310,6 +321,7 @@
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/cmsis-nn/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/fatfs/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/fatfs/CMakeFiles/edit_cache.dir
+/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/fatfs/CMakeFiles/modules__fatfs.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/hal_nordic/CMakeFiles/rebuild_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/hal_nordic/CMakeFiles/edit_cache.dir
 /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/hal_nordic/nrfx/CMakeFiles/rebuild_cache.dir
