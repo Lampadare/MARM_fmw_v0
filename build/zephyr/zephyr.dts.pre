@@ -1192,27 +1192,43 @@ zephyr_udc0: &usbd {
  status = "okay";
 };
 # 0 "<command-line>" 2
-# 1 "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/nrf52840dk_nrf52840.overlay" 1
+# 1 "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/boards/nrf52840dk_nrf52840.overlay" 1
 &qspi {
- status = "disabled";
+    status = "disabled";
+    label = "QSPI";
+};
+
+&spi1 {
+    status = "disabled";
+    label = "SPI1";
 };
 
 &pwm0 {
     status = "disabled";
-    label = "PWM-button";
+    label = "PWM0";
 };
+
 
 &spi3 {
     status = "okay";
-    cs-gpios = <&gpio0 12 (1 << 0)>;
+    cs-gpios = <&gpio1 12 (1 << 0)>;
+    pinctrl-0 = <&spi3_default>;
+    pinctrl-1 = <&spi3_sleep>;
+    pinctrl-names = "default", "sleep";
 
     sdhc0: sdhc@0 {
         compatible = "zephyr,sdhc-spi-slot";
-  status = "okay";
         reg = <0>;
-        label = "SD_CARD";
-        spi-max-frequency = <24000000>;
- };
+        status = "okay";
+        label = "SD";
+        power-delay-ms = <1000>;
+        mmc {
+            compatible = "zephyr,sdmmc-disk";
+            status = "okay";
+            label = "SDMMC_0";
+        };
+        spi-max-frequency = <25000000>;
+    };
 };
 # 0 "<command-line>" 2
 # 1 "/opt/nordic/ncs/v2.6.1/zephyr/misc/empty_file.c"

@@ -1,7 +1,5 @@
 TODO:
 
-- make sure the prj conf works and is sufficient
-- setup SD card driver
 - Implement SD card write
 - Implement SD card thread write from fifo
 - setup SPI intan overlay
@@ -14,6 +12,8 @@ Potentially:
 
 Done:
 
+- setup SD card driver
+- make sure the prj conf works and is sufficient
 - Implement FIFO queue with faketada module
 - implement logic to renegotiate comms terms at the beginning to go for low latency (look at devacademy)
 - understand setting up constant connection with regular data windows, why is it not like that already?

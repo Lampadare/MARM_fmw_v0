@@ -12,6 +12,7 @@ target_sources(app PRIVATE
   src/neuralbs.c
   src/fakedata_module.c
   src/fifo_buffer.c
+  src/sd_card.c
 )
 
 # NORDIC SDK APP END

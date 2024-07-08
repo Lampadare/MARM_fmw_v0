@@ -1,0 +1,38 @@
+&qspi {
+    status = "disabled";
+    label = "QSPI";
+};
+
+&spi1 {
+    status = "disabled";
+    label = "SPI1";
+};
+
+&pwm0 {
+    status = "disabled";
+    label = "PWM0";
+};
+
+
+&spi3 {
+    status = "okay";
+    cs-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>;
+    pinctrl-0 = <&spi3_default>;
+    pinctrl-1 = <&spi3_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    sdhc0: sdhc@0 {
+        compatible = "zephyr,sdhc-spi-slot";
+        reg = <0>;
+        status = "okay";
+        label = "SD";
+        power-delay-ms = <5>;
+        mmc {
+            compatible = "zephyr,sdmmc-disk";
+            status = "okay";
+            label = "SDMMC_0";
+        };
+        spi-max-frequency = <25000000>;
+    };
+};
+

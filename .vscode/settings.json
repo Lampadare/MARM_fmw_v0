@@ -8,6 +8,7 @@
     "types.h": "c",
     "fifo_buffer.h": "c",
     "devicetree.h": "c",
-    "fs.h": "c"
+    "fs.h": "c",
+    "sdhc.h": "c"
   }
 }

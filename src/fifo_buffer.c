@@ -5,8 +5,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include "../inc/fifo_buffer.h"
 #include "../inc/neural_data.h"
+
+LOG_MODULE_REGISTER(fifo_buffer, LOG_LEVEL_INF);
 
 void init_fifo_buffer(fifo_buffer_t *fifo_buffer)
 {
@@ -32,6 +35,9 @@ size_t read_from_fifo_buffer(fifo_buffer_t *fifo_buffer, NeuralData *data, size_
         structs_read++;
     }
 
+    float fill_percentage = (float)fifo_buffer->size / FIFO_BUFFER_SIZE * 100;
+    LOG_INF("FIFO Buffer fill: %.2f%% (read %zu structs)", fill_percentage, structs_read);
+
     k_mutex_unlock(&fifo_buffer->mutex);
 
     return structs_read;
@@ -50,6 +56,14 @@ size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, 
         fifo_buffer->size++;
         data++;
         structs_written++;
+    }
+
+    float fill_percentage = (float)fifo_buffer->size / FIFO_BUFFER_SIZE * 100;
+    LOG_INF("FIFO Buffer fill: %.2f%% (wrote %zu structs)", fill_percentage, structs_written);
+
+    if (structs_written < size)
+    {
+        LOG_WRN("FIFO Buffer full, dropped %zu structs", size - structs_written);
     }
 
     k_mutex_unlock(&fifo_buffer->mutex);

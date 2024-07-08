@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <zephyr/fs/fs.h>
 
+#define SD_CARD_THREAD_STACK_SIZE 16384
+
 /**
  * @brief	Print out the contents under SD card root path and write the content to buffer.
  *
@@ -122,5 +124,7 @@ int sd_card_close(struct fs_file_t *f_seg_read_entry);
  * @retval	Otherwise, error from underlying drivers.
  */
 int sd_card_init(void);
+
+void sd_card_writer_thread(void *arg1, void *arg2, void *arg3);
 
 #endif /* _SD_CARD_H_ */
