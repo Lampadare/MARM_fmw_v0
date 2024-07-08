@@ -24,7 +24,7 @@ LOG_MODULE_REGISTER(sd_card, LOG_LEVEL_DBG); // different in sample code, was CO
 
 K_SEM_DEFINE(m_sem_sd_oper_ongoing, 1, 1);
 
-static const char *sd_root_path = "/SD:";
+static const char *sd_root_path = SD_ROOT_PATH;
 static FATFS fat_fs;
 static bool sd_init_success;
 
@@ -35,9 +35,12 @@ static struct fs_mount_t mnt_pt = {
 
 static char current_data_folder[PATH_MAX_LEN + 1];
 
-#define MAX_STRUCTS_PER_WRITE 30
+#define MAX_STRUCTS_PER_WRITE 10
 #define WRITE_INTERVAL_MS 1
 #define MAX_FILE_SIZE (1024 * 1024) // 1 MB
+
+K_THREAD_STACK_DEFINE(sd_card_stack, SD_CARD_THREAD_STACK_SIZE);
+struct k_thread sd_card_thread_data; // Declare the thread data structure for the fakedata thread
 
 int sd_card_list_files(char const *const path, char *buf, size_t *buf_size)
 {
@@ -47,6 +50,7 @@ int sd_card_list_files(char const *const path, char *buf, size_t *buf_size)
     char abs_path_name[PATH_MAX_LEN + 1] = SD_ROOT_PATH;
     size_t used_buf_size = 0;
 
+    printk("sd_card_list_files: taking sem");
     ret = k_sem_take(&m_sem_sd_oper_ongoing, K_MSEC(K_SEM_OPER_TIMEOUT_MS));
     if (ret)
     {
@@ -54,6 +58,7 @@ int sd_card_list_files(char const *const path, char *buf, size_t *buf_size)
         return ret;
     }
 
+    printk("sd_card_list_files: sem taken");
     if (!sd_init_success)
     {
         k_sem_give(&m_sem_sd_oper_ongoing);
@@ -116,6 +121,7 @@ int sd_card_list_files(char const *const path, char *buf, size_t *buf_size)
             if (len >= remaining_buf_size)
             {
                 LOG_ERR("Failed to append to buffer, error: %d", len);
+                printk("Failed to append to buffer, error: %d", len);
                 k_sem_give(&m_sem_sd_oper_ongoing);
                 return -EINVAL;
             }
@@ -130,6 +136,7 @@ int sd_card_list_files(char const *const path, char *buf, size_t *buf_size)
     if (ret)
     {
         LOG_ERR("Close SD card root dir failed");
+        printk("Close SD card root dir failed");
         k_sem_give(&m_sem_sd_oper_ongoing);
         return ret;
     }
@@ -144,6 +151,7 @@ int sd_card_open_write_close(char const *const filename, char const *const data,
     int ret;
     struct fs_file_t f_entry;
     char abs_path_name[PATH_MAX_LEN + 1] = SD_ROOT_PATH;
+    size_t remaining_space = PATH_MAX_LEN - strlen(abs_path_name);
 
     ret = k_sem_take(&m_sem_sd_oper_ongoing, K_MSEC(K_SEM_OPER_TIMEOUT_MS));
     if (ret)
@@ -158,14 +166,14 @@ int sd_card_open_write_close(char const *const filename, char const *const data,
         return -ENODEV;
     }
 
-    if (strlen(filename) > CONFIG_FS_FATFS_MAX_LFN)
+    if (strlen(filename) > remaining_space)
     {
         LOG_ERR("Filename is too long");
         k_sem_give(&m_sem_sd_oper_ongoing);
         return -ENAMETOOLONG;
     }
 
-    strcat(abs_path_name, filename);
+    strncat(abs_path_name, filename, remaining_space);
     fs_file_t_init(&f_entry);
 
     ret = fs_open(&f_entry, abs_path_name, FS_O_CREATE | FS_O_WRITE | FS_O_APPEND);
@@ -373,13 +381,83 @@ int create_directory(const char *path)
     fs_dir_t_init(&dir);
 
     ret = fs_mkdir(path);
-    if (ret && ret != -EEXIST)
+    if (ret == 0)
     {
-        LOG_ERR("Failed to create directory %s: %d", path, ret);
+        LOG_INF("Directory created successfully: %s", path);
+        return 0;
+    }
+    else if (ret == -EEXIST)
+    {
+        LOG_INF("Directory already exists: %s", path);
+        return -EEXIST; // Return EEXIST to allow the caller to handle it
+    }
+    else
+    {
+        LOG_ERR("Failed to create directory %s: error %d", path, ret);
         return ret;
     }
+}
 
-    return 0;
+int find_highest_session_number(void)
+{
+    int highest_session = 0;
+    struct fs_dir_t dirp;
+    struct fs_dirent entry;
+    char *prefix = "session_";
+    int prefix_len = strlen(prefix);
+    int ret;
+
+    // Initialize the directory object
+    fs_dir_t_init(&dirp);
+
+    // Open the root directory
+    ret = fs_opendir(&dirp, sd_root_path);
+    if (ret)
+    {
+        LOG_ERR("Failed to open root directory %s (err %d)", sd_root_path, ret);
+        return -1;
+    }
+
+    LOG_INF("Searching for session directories in %s", sd_root_path);
+
+    // Read directory entries
+    while (1)
+    {
+        ret = fs_readdir(&dirp, &entry);
+        if (ret)
+        {
+            LOG_ERR("Failed to read directory entry (err %d)", ret);
+            break;
+        }
+
+        // Check if we've reached the end of the directory
+        if (entry.name[0] == 0)
+        {
+            break;
+        }
+
+        // Check if the entry is a directory and starts with "session_"
+        if (entry.type == FS_DIR_ENTRY_DIR &&
+            strncmp(entry.name, prefix, prefix_len) == 0)
+        {
+
+            // Try to convert the rest of the name to an integer
+            int session_num = atoi(entry.name + prefix_len);
+
+            // Update highest_session if this number is greater
+            if (session_num > highest_session)
+            {
+                highest_session = session_num;
+            }
+        }
+    }
+
+    // Close the directory
+    fs_closedir(&dirp);
+
+    LOG_INF("Highest session number found: %d", highest_session);
+
+    return highest_session;
 }
 
 int sd_card_init(void)
@@ -390,6 +468,7 @@ int sd_card_init(void)
     uint32_t sector_count;
     size_t sector_size;
 
+    // INITIALIZE SD CARD =============================================================================================
     LOG_INF("Initializing SD card...");
 
     // Check if the SD device is available
@@ -452,23 +531,58 @@ int sd_card_init(void)
 
     LOG_INF("SD card initialized and mounted successfully");
 
-    // Create a new folder for this session
-    uint32_t folder_counter = 0;
-    do
-    {
-        snprintf(current_data_folder, sizeof(current_data_folder),
-                 "%s/session_%u", sd_root_path, folder_counter++);
-    } while (create_directory(current_data_folder) == -EEXIST && folder_counter < UINT32_MAX);
+    // Add a longer delay after mounting
+    k_sleep(K_MSEC(500));
 
-    if (folder_counter == UINT32_MAX)
+    // Verify the mount point
+    struct fs_statvfs stats;
+    ret = fs_statvfs(mnt_pt.mnt_point, &stats);
+    if (ret != 0)
     {
-        LOG_ERR("Failed to create a unique session folder");
-        return -ENOSPC;
+        LOG_ERR("Failed to get filesystem stats (err %d)", ret);
+        return ret;
+    }
+    LOG_INF("Filesystem mounted at %s is accessible", mnt_pt.mnt_point);
+
+    sd_init_success = true; // indicate SD card is initialized for other funcs
+
+    // LIST FILES AND FIND THE HIGHEST SESSION NUMBER =============================================================
+    char list_buf[1024];
+    size_t buf_size = sizeof(list_buf);
+    ret = sd_card_list_files("/", list_buf, &buf_size);
+    if (ret != 0)
+    {
+        LOG_ERR("Failed to list files in root directory (err %d)", ret);
+        return ret;
+    }
+    LOG_INF("Files in root directory:\n%s", list_buf);
+
+    // Find the highest existing session number
+    int highest_session = find_highest_session_number();
+    if (highest_session < 0)
+    {
+        LOG_ERR("Failed to determine highest session number");
+        highest_session = 0; // Handle error (maybe set a default value)
     }
 
-    LOG_INF("Created new data folder: %s", current_data_folder);
+    // Create a new folder for this session
+    uint32_t new_session = highest_session + 1;
+    snprintf(current_data_folder, sizeof(current_data_folder),
+             "%s/session_%u", sd_root_path, new_session);
 
-    sd_init_success = true;
+    LOG_INF("Attempting to create directory: %s", current_data_folder);
+    ret = create_directory(current_data_folder);
+
+    if (ret == 0)
+    {
+        LOG_INF("Created new data folder: %s", current_data_folder);
+    }
+    else
+    {
+        LOG_ERR("Failed to create directory %s, error: %d", current_data_folder, ret);
+        return ret;
+    }
+
     return 0;
 }
 
@@ -476,10 +590,18 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
 {
     fifo_buffer_t *fifo_buffer = (fifo_buffer_t *)arg1;
     NeuralData data[MAX_STRUCTS_PER_WRITE];
-    char filename[32];
+    char filename[PATH_MAX_LEN + 1];
     static uint32_t file_counter = 0;
     size_t current_file_size = 0;
     int64_t last_write_time = k_uptime_get();
+
+    // Wait for SD card initialization to complete
+    while (!sd_init_success)
+    {
+        k_sleep(K_MSEC(100));
+    }
+
+    LOG_INF("SD card writer thread started, writing to folder: %s", current_data_folder);
 
     while (1)
     {
@@ -489,9 +611,16 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
         {
             if (current_file_size == 0 || current_file_size >= MAX_FILE_SIZE)
             {
-                snprintf(filename, sizeof(filename), "%s/neural_data_%u.bin",
-                         current_data_folder, file_counter++);
+                int ret = snprintf(filename, sizeof(filename), "%s/neural_data_%u.bin",
+                                   current_data_folder, file_counter++);
+                if (ret < 0 || ret >= sizeof(filename))
+                {
+                    LOG_ERR("Filename truncated or error in snprintf");
+                    k_sleep(K_MSEC(100)); // Add a delay before retrying
+                    continue;             // Skip this iteration and try again
+                }
                 current_file_size = 0;
+                LOG_INF("Creating new file: %s", filename);
             }
 
             size_t bytes_to_write = structs_read * sizeof(NeuralData);
@@ -502,7 +631,7 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
             }
             else
             {
-                LOG_INF("Wrote %zu bytes to %s", bytes_to_write, filename);
+                LOG_DBG("Wrote %zu bytes to %s", bytes_to_write, filename);
                 current_file_size += bytes_to_write;
                 last_write_time = k_uptime_get();
             }

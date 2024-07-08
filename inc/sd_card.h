@@ -5,6 +5,8 @@
 #include <zephyr/fs/fs.h>
 
 #define SD_CARD_THREAD_STACK_SIZE 16384
+extern struct k_thread sd_card_thread_data;
+extern k_thread_stack_t sd_card_stack[];
 
 /**
  * @brief	Print out the contents under SD card root path and write the content to buffer.

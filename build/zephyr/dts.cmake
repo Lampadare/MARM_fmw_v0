@@ -822,7 +822,7 @@ set_target_properties(devicetree_target PROPERTIES "DT_REG|/soc/spi@4002f000|ADD
 set_target_properties(devicetree_target PROPERTIES "DT_REG|/soc/spi@4002f000|SIZE" "0x1000;")
 set_target_properties(devicetree_target PROPERTIES "DT_NODE|/soc/spi@4002f000/sdhc@0" TRUE)
 set_target_properties(devicetree_target PROPERTIES "DT_NODELABEL|sdhc0" "/soc/spi@4002f000/sdhc@0")
-set_target_properties(devicetree_target PROPERTIES "DT_PROP|/soc/spi@4002f000/sdhc@0|power-delay-ms" "1000")
+set_target_properties(devicetree_target PROPERTIES "DT_PROP|/soc/spi@4002f000/sdhc@0|power-delay-ms" "5")
 set_target_properties(devicetree_target PROPERTIES "DT_PROP|/soc/spi@4002f000/sdhc@0|spi-clock-mode-cpol" "False")
 set_target_properties(devicetree_target PROPERTIES "DT_PROP|/soc/spi@4002f000/sdhc@0|spi-clock-mode-cpha" "False")
 set_target_properties(devicetree_target PROPERTIES "DT_PROP|/soc/spi@4002f000/sdhc@0|reg" "0;")

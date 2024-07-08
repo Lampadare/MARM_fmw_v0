@@ -26,14 +26,24 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
-#define STACKSIZE 8192
 #define STATUS_NOTIFY_PRIORITY 8
 #define SD_CARD_THREAD_PRIORITY 5
 #define NEURAL_DATA_NOTIFY_PRIORITY 4
 #define FAKEDATA_THREAD_PRIORITY 3
 
+#define NEURAL_DATA_NOTIFY_STACK_SIZE 8192
+#define SYSTEM_STATUS_NOTIFY_STACK_SIZE 8192
+
 #define SYSTEM_STATUS_NOTIFY_INTERVAL 1 // system status notify interval in seconds
 #define NEURAL_DATA_NOTIFY_INTERVAL 4	// neural data notify interval in milliseconds
+
+// Define thread stacks
+K_THREAD_STACK_DEFINE(neural_data_notify_stack, NEURAL_DATA_NOTIFY_STACK_SIZE);
+K_THREAD_STACK_DEFINE(status_notify_stack, SYSTEM_STATUS_NOTIFY_STACK_SIZE);
+
+// Declare thread IDs
+static struct k_thread neural_data_notify_thread_data;
+static struct k_thread status_notify_thread_data;
 
 struct bt_conn *my_conn = NULL;
 static struct bt_gatt_exchange_params exchange_params;
@@ -103,7 +113,7 @@ static void update_mtu(struct bt_conn *conn)
 	}
 }
 
-void status_notify_thread(void)
+void status_notify_thread(void *p1, void *p2, void *p3)
 {
 	while (1)
 	{
@@ -112,7 +122,7 @@ void status_notify_thread(void)
 	}
 }
 
-void neural_data_notify_thread(void)
+void neural_data_notify_thread(void *p1, void *p2, void *p3)
 {
 	while (1)
 	{
@@ -241,26 +251,40 @@ int main(void)
 		return -1;
 	}
 
-	LOG_INF("All systems initialized\n");
+	LOG_INF("=======!!! All systems initialized !!!======= \n");
 
-	for (;;)
-	{
-		// update_neural_data();
-		// k_sleep(K_MSEC(NEURAL_DATA_INTERVAL));
-		k_sleep(K_SECONDS(10));
-	}
+	k_sleep(K_MSEC(100));
+
+	// Create threads dynamically
+	LOG_INF("Creating neural data notify thread...");
+	k_thread_create(&neural_data_notify_thread_data, neural_data_notify_stack,
+					K_THREAD_STACK_SIZEOF(neural_data_notify_stack),
+					neural_data_notify_thread, NULL, NULL, NULL,
+					NEURAL_DATA_NOTIFY_PRIORITY, 0, K_MSEC(1000));
+	LOG_INF("Neural data notify thread created");
+
+	LOG_INF("Creating status notify thread...");
+	k_thread_create(&status_notify_thread_data, status_notify_stack,
+					K_THREAD_STACK_SIZEOF(status_notify_stack),
+					status_notify_thread, NULL, NULL, NULL,
+					STATUS_NOTIFY_PRIORITY, 0, K_MSEC(3000));
+	LOG_INF("Status notify thread created");
+
+	LOG_INF("Creating fakedata thread...");
+	k_thread_create(&fakedata_thread_data, fakedata_stack,
+					FAKEDATA_THREAD_STACK_SIZE,
+					fakedata_thread, &fifo_buffer, NULL, NULL,
+					FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
+	LOG_INF("Fakedata thread created");
+
+	LOG_INF("Creating SD card writer thread...");
+	k_thread_create(&sd_card_thread_data, sd_card_stack,
+					SD_CARD_THREAD_STACK_SIZE,
+					sd_card_writer_thread, &fifo_buffer, NULL, NULL,
+					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(10400));
+	LOG_INF("SD card writer thread created");
+
+	LOG_INF("=======!!! All threads created successfully !!!======= \n");
+
+	return 0;
 }
-
-/* STEP 18.2 - Define and initialize a thread to send data periodically */
-K_THREAD_DEFINE(neural_data_notify_thread_id, STACKSIZE, neural_data_notify_thread, NULL, NULL,
-				NULL, NEURAL_DATA_NOTIFY_PRIORITY, 0, 1000);
-
-/* STEP 18.2 - Define and initialize a thread to send data periodically */
-K_THREAD_DEFINE(status_notify_thread_id, STACKSIZE, status_notify_thread, NULL, NULL,
-				NULL, STATUS_NOTIFY_PRIORITY, 0, 3000);
-
-K_THREAD_DEFINE(fakedata_thread_id, FAKEDATA_THREAD_STACK_SIZE, fakedata_thread, &fifo_buffer, NULL,
-				NULL, FAKEDATA_THREAD_PRIORITY, 0, 10000);
-
-K_THREAD_DEFINE(sd_card_thread_id, SD_CARD_THREAD_STACK_SIZE, sd_card_writer_thread, &fifo_buffer, NULL,
-				NULL, SD_CARD_THREAD_PRIORITY, 0, 1100);

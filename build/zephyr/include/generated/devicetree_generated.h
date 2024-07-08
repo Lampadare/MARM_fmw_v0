@@ -14912,7 +14912,7 @@
 #define DT_N_S_soc_S_spi_4002f000_S_sdhc_0_PINCTRL_NUM 0
 
 /* Generic property macros: */
-#define DT_N_S_soc_S_spi_4002f000_S_sdhc_0_P_power_delay_ms 1000
+#define DT_N_S_soc_S_spi_4002f000_S_sdhc_0_P_power_delay_ms 5
 #define DT_N_S_soc_S_spi_4002f000_S_sdhc_0_P_power_delay_ms_EXISTS 1
 #define DT_N_S_soc_S_spi_4002f000_S_sdhc_0_P_spi_clock_mode_cpol 0
 #define DT_N_S_soc_S_spi_4002f000_S_sdhc_0_P_spi_clock_mode_cpol_EXISTS 1

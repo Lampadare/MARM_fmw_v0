@@ -10,7 +10,7 @@
 #include "../inc/neural_data.h"
 #include "../inc/fifo_buffer.h"
 
-#define SAMPLE_RATE_HZ 130
+#define SAMPLE_RATE_HZ 500
 
 // Registering the module with the logging system
 LOG_MODULE_REGISTER(fakedata, LOG_LEVEL_INF);

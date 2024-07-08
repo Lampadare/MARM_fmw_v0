@@ -24,7 +24,7 @@ size_t read_from_fifo_buffer(fifo_buffer_t *fifo_buffer, NeuralData *data, size_
 {
     size_t structs_read = 0;
 
-    k_mutex_lock(&fifo_buffer->mutex, K_FOREVER);
+    k_mutex_lock(&fifo_buffer->mutex, K_MSEC(1));
 
     while (structs_read < max_size && fifo_buffer->size > 0)
     {
@@ -47,7 +47,7 @@ size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, 
 {
     size_t structs_written = 0;
 
-    k_mutex_lock(&fifo_buffer->mutex, K_FOREVER);
+    k_mutex_lock(&fifo_buffer->mutex, K_MSEC(1));
 
     while (structs_written < size && fifo_buffer->size < FIFO_BUFFER_SIZE)
     {

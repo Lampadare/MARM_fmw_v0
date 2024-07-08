@@ -1221,7 +1221,7 @@ zephyr_udc0: &usbd {
         reg = <0>;
         status = "okay";
         label = "SD";
-        power-delay-ms = <1000>;
+        power-delay-ms = <5>;
         mmc {
             compatible = "zephyr,sdmmc-disk";
             status = "okay";
