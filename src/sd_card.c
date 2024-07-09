@@ -36,8 +36,9 @@ static struct fs_mount_t mnt_pt = {
 static char current_data_folder[PATH_MAX_LEN + 1];
 
 #define MAX_STRUCTS_PER_WRITE 10
-#define WRITE_INTERVAL_MS 1
-#define MAX_FILE_SIZE (1024 * 1024) // 1 MB
+#define WRITE_INTERVAL_MS 100
+#define MAX_FILE_SIZE (128 * 1024)    // 128 KB
+#define WRITE_BUFFER_SIZE (64 * 1024) // 64 KB write buffer
 
 K_THREAD_STACK_DEFINE(sd_card_stack, SD_CARD_THREAD_STACK_SIZE);
 struct k_thread sd_card_thread_data; // Declare the thread data structure for the fakedata thread
@@ -150,8 +151,7 @@ int sd_card_open_write_close(char const *const filename, char const *const data,
 {
     int ret;
     struct fs_file_t f_entry;
-    char abs_path_name[PATH_MAX_LEN + 1] = SD_ROOT_PATH;
-    size_t remaining_space = PATH_MAX_LEN - strlen(abs_path_name);
+    char abs_path_name[PATH_MAX_LEN + 1];
 
     ret = k_sem_take(&m_sem_sd_oper_ongoing, K_MSEC(K_SEM_OPER_TIMEOUT_MS));
     if (ret)
@@ -166,20 +166,22 @@ int sd_card_open_write_close(char const *const filename, char const *const data,
         return -ENODEV;
     }
 
-    if (strlen(filename) > remaining_space)
+    // Construct the absolute path
+    if (snprintf(abs_path_name, sizeof(abs_path_name), "%s", filename) >= sizeof(abs_path_name))
     {
         LOG_ERR("Filename is too long");
         k_sem_give(&m_sem_sd_oper_ongoing);
         return -ENAMETOOLONG;
     }
 
-    strncat(abs_path_name, filename, remaining_space);
+    LOG_INF("!!!Writing to file: %s", abs_path_name);
+
     fs_file_t_init(&f_entry);
 
     ret = fs_open(&f_entry, abs_path_name, FS_O_CREATE | FS_O_WRITE | FS_O_APPEND);
     if (ret)
     {
-        LOG_ERR("Create file failed");
+        LOG_ERR("Create file failed: %d", ret);
         k_sem_give(&m_sem_sd_oper_ongoing);
         return ret;
     }
@@ -188,7 +190,8 @@ int sd_card_open_write_close(char const *const filename, char const *const data,
     ret = fs_seek(&f_entry, 0, FS_SEEK_END);
     if (ret)
     {
-        LOG_ERR("Seek file pointer failed");
+        LOG_ERR("Seek file pointer failed: %d", ret);
+        fs_close(&f_entry);
         k_sem_give(&m_sem_sd_oper_ongoing);
         return ret;
     }
@@ -196,7 +199,8 @@ int sd_card_open_write_close(char const *const filename, char const *const data,
     ret = fs_write(&f_entry, data, *size);
     if (ret < 0)
     {
-        LOG_ERR("Write file failed");
+        LOG_ERR("Write file failed: %d", ret);
+        fs_close(&f_entry);
         k_sem_give(&m_sem_sd_oper_ongoing);
         return ret;
     }
@@ -206,7 +210,7 @@ int sd_card_open_write_close(char const *const filename, char const *const data,
     ret = fs_close(&f_entry);
     if (ret)
     {
-        LOG_ERR("Close file failed");
+        LOG_ERR("Close file failed: %d", ret);
         k_sem_give(&m_sem_sd_oper_ongoing);
         return ret;
     }
@@ -532,7 +536,7 @@ int sd_card_init(void)
     LOG_INF("SD card initialized and mounted successfully");
 
     // Add a longer delay after mounting
-    k_sleep(K_MSEC(500));
+    // k_sleep(K_MSEC(500));
 
     // Verify the mount point
     struct fs_statvfs stats;
@@ -595,49 +599,98 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
     size_t current_file_size = 0;
     int64_t last_write_time = k_uptime_get();
 
+    // Write buffer
+    char write_buffer[WRITE_BUFFER_SIZE];
+    size_t buffer_offset = 0;
+
     // Wait for SD card initialization to complete
     while (!sd_init_success)
     {
         k_sleep(K_MSEC(100));
     }
 
+    // Ensure the current_data_folder is set
+    if (strlen(current_data_folder) == 0)
+    {
+        LOG_ERR("Current data folder not set. Unable to write data.");
+        return;
+    }
+
     LOG_INF("SD card writer thread started, writing to folder: %s", current_data_folder);
 
     while (1)
     {
-        size_t structs_read = read_from_fifo_buffer(fifo_buffer, data, MAX_STRUCTS_PER_WRITE);
+        int sem_ret = k_sem_take(&fifo_buffer->data_available, K_MSEC(WRITE_INTERVAL_MS));
 
-        if (structs_read > 0 || (k_uptime_get() - last_write_time) >= WRITE_INTERVAL_MS)
+        if (sem_ret == 0 || (k_uptime_get() - last_write_time) >= WRITE_INTERVAL_MS)
         {
-            if (current_file_size == 0 || current_file_size >= MAX_FILE_SIZE)
+            size_t structs_read = read_from_fifo_buffer(fifo_buffer, data, MAX_STRUCTS_PER_WRITE);
+
+            if (structs_read > 0)
             {
-                int ret = snprintf(filename, sizeof(filename), "%s/neural_data_%u.bin",
-                                   current_data_folder, file_counter++);
-                if (ret < 0 || ret >= sizeof(filename))
+                size_t bytes_to_write = structs_read * sizeof(NeuralData);
+
+                // Check if we need to flush the buffer
+                if (buffer_offset + bytes_to_write > WRITE_BUFFER_SIZE)
                 {
-                    LOG_ERR("Filename truncated or error in snprintf");
-                    k_sleep(K_MSEC(100)); // Add a delay before retrying
-                    continue;             // Skip this iteration and try again
+                    // Flush the buffer
+                    int ret = sd_card_open_write_close(filename, write_buffer, &buffer_offset);
+                    if (ret != 0)
+                    {
+                        LOG_ERR("Failed to write buffer to SD card, err: %d", ret);
+                    }
+                    else
+                    {
+                        LOG_DBG("Wrote %zu bytes to %s", buffer_offset, filename);
+                        current_file_size += buffer_offset;
+                        last_write_time = k_uptime_get();
+                    }
+                    buffer_offset = 0;
                 }
-                current_file_size = 0;
-                LOG_INF("Creating new file: %s", filename);
+
+                // Copy new data to buffer
+                memcpy(write_buffer + buffer_offset, data, bytes_to_write);
+                buffer_offset += bytes_to_write;
+
+                // Check if we need to create a new file
+                if (current_file_size == 0 || current_file_size >= MAX_FILE_SIZE)
+                {
+                    int ret = snprintf(filename, sizeof(filename), "%s/neural_data_%u.bin",
+                                       current_data_folder, file_counter++);
+                    if (ret < 0 || ret >= sizeof(filename))
+                    {
+                        LOG_ERR("Filename truncated or error in snprintf");
+                        k_sleep(K_MSEC(100));
+                        continue;
+                    }
+                    current_file_size = 0;
+                    LOG_INF("Creating new file: %s", filename);
+                }
+            }
+            else if (sem_ret == 0)
+            {
+                LOG_WRN("Semaphore signaled but no data read from FIFO buffer");
             }
 
-            size_t bytes_to_write = structs_read * sizeof(NeuralData);
-            int ret = sd_card_open_write_close(filename, (const char *)data, &bytes_to_write);
-            if (ret != 0)
+            // If it's time to write or the buffer is getting full, flush it
+            if ((k_uptime_get() - last_write_time) >= WRITE_INTERVAL_MS || buffer_offset > (WRITE_BUFFER_SIZE / 2))
             {
-                LOG_ERR("Failed to write data to SD card, err: %d", ret);
-            }
-            else
-            {
-                LOG_DBG("Wrote %zu bytes to %s", bytes_to_write, filename);
-                current_file_size += bytes_to_write;
-                last_write_time = k_uptime_get();
+                if (buffer_offset > 0)
+                {
+                    int ret = sd_card_open_write_close(filename, write_buffer, &buffer_offset);
+                    if (ret != 0)
+                    {
+                        LOG_ERR("Failed to write buffer to SD card, err: %d", ret);
+                    }
+                    else
+                    {
+                        LOG_DBG("Wrote %zu bytes to %s", buffer_offset, filename);
+                        current_file_size += buffer_offset;
+                        last_write_time = k_uptime_get();
+                    }
+                    buffer_offset = 0;
+                }
             }
         }
-
-        // Sleep for a short time to allow other threads to run
-        k_sleep(K_MSEC(10));
     }
 }
