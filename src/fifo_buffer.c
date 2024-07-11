@@ -47,7 +47,7 @@ size_t read_from_fifo_buffer(fifo_buffer_t *fifo_buffer, NeuralData *data, size_
     {
         // Reset the semaphore when falling below 50% threshold
         k_sem_reset(&fifo_buffer->data_available);
-        LOG_INF("Buffer fell below 50% capacity, reset data availability signal");
+        LOG_INF("Buffer fell below 50 percent capacity, reset data availability signal");
     }
 
     k_mutex_unlock(&fifo_buffer->mutex);
@@ -87,7 +87,7 @@ size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, 
     {
         // Signal that data is available only when crossing the 50% threshold
         k_sem_give(&fifo_buffer->data_available);
-        LOG_INF("Buffer reached 50% capacity, signaled data availability");
+        LOG_INF("Buffer reached 50 percent capacity, signaled data availability");
     }
 
     k_mutex_unlock(&fifo_buffer->mutex);

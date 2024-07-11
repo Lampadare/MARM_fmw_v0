@@ -1221,13 +1221,13 @@ zephyr_udc0: &usbd {
         reg = <0>;
         status = "okay";
         label = "SD";
-        power-delay-ms = <5>;
+
         mmc {
             compatible = "zephyr,sdmmc-disk";
             status = "okay";
             label = "SDMMC_0";
         };
-        spi-max-frequency = <25000000>;
+        spi-max-frequency = <20000000>;
     };
 };
 # 0 "<command-line>" 2

@@ -526,8 +526,7 @@
 				reg = < 0x0 >;
 				status = "okay";
 				label = "SD";
-				power-delay-ms = < 0x5 >;
-				spi-max-frequency = < 0x17d7840 >;
+				spi-max-frequency = < 0x1312d00 >;
 				mmc {
 					compatible = "zephyr,sdmmc-disk";
 					status = "okay";

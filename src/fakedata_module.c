@@ -52,7 +52,7 @@ void fakedata_thread(void *arg1, void *arg2, void *arg3)
         // Update the global latest_neural_data variable
         latest_neural_data = data;
 
-        LOG_INF("Faked data written to fifo buffer: %d", latest_neural_data.timestamp);
+        // LOG_INF("Faked data written to fifo buffer: %d", latest_neural_data.timestamp);
 
         // Sleep to maintain the specified sample rate
         k_sleep(K_MSEC(1000 / SAMPLE_RATE_HZ));

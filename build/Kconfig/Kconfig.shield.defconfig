@@ -1,3 +1,2 @@
 osource "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/boards/shields/*/Kconfig.defconfig"
-osource "/Users/Martin/Desktop/HBR/Masters/fmw_tests/SD_custom_test/boards/shields/*/Kconfig.defconfig"
 osource "/opt/nordic/ncs/v2.6.1/nrf/boards/shields/*/Kconfig.defconfig"

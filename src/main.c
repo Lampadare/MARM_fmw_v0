@@ -6,6 +6,7 @@
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/conn.h>
+#include <zephyr/devicetree.h>
 
 #include "../inc/neuralbs.h"
 #include "../inc/device_status.h"
@@ -220,8 +221,21 @@ int main(void)
 {
 	int err;
 
+	// Wait for 100ms to allow the system to stabilize
+	k_sleep(K_MSEC(100));
 	LOG_INF("Marmoset FMW V0 \n");
 
+	// Initialize SD card ============================================================
+	LOG_INF("Initializing SD card...");
+	err = sd_card_init();
+	if (err)
+	{
+		LOG_ERR("SD card initialization failed (err %d)", err);
+		return -1;
+	}
+	k_sleep(K_MSEC(100));
+
+	// Initialize Bluetooth ============================================================
 	err = bt_enable(NULL);
 	if (err)
 	{
@@ -229,55 +243,47 @@ int main(void)
 		return -1;
 	}
 	bt_conn_cb_register(&connection_callbacks);
+	LOG_INF("Bluetooth initialized");
+	k_sleep(K_MSEC(100));
 
-	LOG_INF("Bluetooth initialized\n");
+	// Start advertising ============================================================
 	err = bt_le_adv_start(adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 	if (err)
 	{
-		LOG_ERR("Advertising failed to start (err %d)\n", err);
+		LOG_ERR("Advertising failed to start (err %d)", err);
 		return -1;
 	}
-
-	LOG_INF("Advertising successfully started\n");
-
-	LOG_INF("Initializing FIFO buffer...");
-	init_fifo_buffer(&fifo_buffer);
-
-	LOG_INF("Initializing SD card...");
-	err = sd_card_init();
-	if (err)
-	{
-		LOG_ERR("SD card initialization failed (err %d)\n", err);
-		return -1;
-	}
-
-	LOG_INF("=======!!! All systems initialized !!!======= \n");
-
+	LOG_INF("Advertising successfully started");
 	k_sleep(K_MSEC(100));
 
-	// Create threads dynamically
-	LOG_INF("Creating neural data notify thread...");
+	// Initialize FIFO buffer ============================================================
+	LOG_INF("Initializing FIFO buffer...");
+	init_fifo_buffer(&fifo_buffer);
+	k_sleep(K_MSEC(100));
+
+	LOG_INF("=======!!! All systems initialized !!!======= \n");
+	k_sleep(K_MSEC(100));
+
+	// Create threads dynamically ============================================================
+
 	k_thread_create(&neural_data_notify_thread_data, neural_data_notify_stack,
 					K_THREAD_STACK_SIZEOF(neural_data_notify_stack),
 					neural_data_notify_thread, NULL, NULL, NULL,
 					NEURAL_DATA_NOTIFY_PRIORITY, 0, K_MSEC(1000));
 	LOG_INF("Neural data notify thread created");
 
-	LOG_INF("Creating status notify thread...");
 	k_thread_create(&status_notify_thread_data, status_notify_stack,
 					K_THREAD_STACK_SIZEOF(status_notify_stack),
 					status_notify_thread, NULL, NULL, NULL,
 					STATUS_NOTIFY_PRIORITY, 0, K_MSEC(3000));
 	LOG_INF("Status notify thread created");
 
-	LOG_INF("Creating fakedata thread...");
 	k_thread_create(&fakedata_thread_data, fakedata_stack,
 					FAKEDATA_THREAD_STACK_SIZE,
 					fakedata_thread, &fifo_buffer, NULL, NULL,
 					FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
 	LOG_INF("Fakedata thread created");
 
-	LOG_INF("Creating SD card writer thread...");
 	k_thread_create(&sd_card_thread_data, sd_card_stack,
 					SD_CARD_THREAD_STACK_SIZE,
 					sd_card_writer_thread, &fifo_buffer, NULL, NULL,
