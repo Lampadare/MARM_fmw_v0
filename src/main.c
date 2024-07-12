@@ -28,7 +28,7 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
 #define STATUS_NOTIFY_PRIORITY 8
-#define SD_CARD_THREAD_PRIORITY 2
+#define SD_CARD_THREAD_PRIORITY 3
 #define NEURAL_DATA_NOTIFY_PRIORITY 4
 #define FAKEDATA_THREAD_PRIORITY 3
 
@@ -233,6 +233,7 @@ int main(void)
 		LOG_ERR("SD card initialization failed (err %d)", err);
 		return -1;
 	}
+	LOG_INF("SD card initialized");
 	k_sleep(K_MSEC(100));
 
 	// Initialize Bluetooth ============================================================
@@ -266,28 +267,28 @@ int main(void)
 
 	// Create threads dynamically ============================================================
 
-	k_thread_create(&neural_data_notify_thread_data, neural_data_notify_stack,
-					K_THREAD_STACK_SIZEOF(neural_data_notify_stack),
-					neural_data_notify_thread, NULL, NULL, NULL,
-					NEURAL_DATA_NOTIFY_PRIORITY, 0, K_MSEC(1000));
-	LOG_INF("Neural data notify thread created");
+	// k_thread_create(&neural_data_notify_thread_data, neural_data_notify_stack,
+	// 				K_THREAD_STACK_SIZEOF(neural_data_notify_stack),
+	// 				neural_data_notify_thread, NULL, NULL, NULL,
+	// 				NEURAL_DATA_NOTIFY_PRIORITY, 0, K_MSEC(500));
+	// LOG_INF("Neural data notify thread created");
 
-	k_thread_create(&status_notify_thread_data, status_notify_stack,
-					K_THREAD_STACK_SIZEOF(status_notify_stack),
-					status_notify_thread, NULL, NULL, NULL,
-					STATUS_NOTIFY_PRIORITY, 0, K_MSEC(3000));
-	LOG_INF("Status notify thread created");
+	// k_thread_create(&status_notify_thread_data, status_notify_stack,
+	// 				K_THREAD_STACK_SIZEOF(status_notify_stack),
+	// 				status_notify_thread, NULL, NULL, NULL,
+	// 				STATUS_NOTIFY_PRIORITY, 0, K_MSEC(1000));
+	// LOG_INF("Status notify thread created");
 
 	k_thread_create(&fakedata_thread_data, fakedata_stack,
 					FAKEDATA_THREAD_STACK_SIZE,
 					fakedata_thread, &fifo_buffer, NULL, NULL,
-					FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
+					FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(2000));
 	LOG_INF("Fakedata thread created");
 
 	k_thread_create(&sd_card_thread_data, sd_card_stack,
 					SD_CARD_THREAD_STACK_SIZE,
 					sd_card_writer_thread, &fifo_buffer, NULL, NULL,
-					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(10400));
+					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(3000));
 	LOG_INF("SD card writer thread created");
 
 	LOG_INF("=======!!! All threads created successfully !!!======= \n");

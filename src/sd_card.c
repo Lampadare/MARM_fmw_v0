@@ -18,7 +18,6 @@
 LOG_MODULE_REGISTER(sd_card, LOG_LEVEL_DBG); // different in sample code, was CONFIG_MODULE_SD_CARD_LOG_LEVEL, for module specific Kconfig files
 
 #define SD_ROOT_PATH "/SD:/"
-/* Maximum length for path support by Windows file system */
 #define PATH_MAX_LEN 260
 #define K_SEM_OPER_TIMEOUT_MS 1000
 
@@ -35,10 +34,11 @@ static struct fs_mount_t mnt_pt = {
 
 static char current_data_folder[PATH_MAX_LEN + 1];
 
-#define MAX_STRUCTS_PER_WRITE 10
-#define WRITE_INTERVAL_MS 100
-#define MAX_FILE_SIZE (128 * 1024)    // 128 KB
-#define WRITE_BUFFER_SIZE (64 * 1024) // 64 KB write buffer
+#define MAX_STRUCTS_PER_WRITE 100
+#define WRITE_INTERVAL_MS 500
+#define MAX_FILE_SIZE (76128)     // 76 KB - equivalent to 2.4 seconds recording (including timestamps)
+#define WRITE_BUFFER_SIZE (25376) // 25 KB write buffer (0.8 second of recording)
+#define MAX_NEURAL_DATA_PER_WRITE (WRITE_BUFFER_SIZE / sizeof(NeuralData))
 
 K_THREAD_STACK_DEFINE(sd_card_stack, SD_CARD_THREAD_STACK_SIZE);
 struct k_thread sd_card_thread_data; // Declare the thread data structure for the fakedata thread
@@ -480,21 +480,15 @@ int sd_card_init(void)
     size_t sector_size;
 
     // INITIALIZE SD CARD =============================================================================================
-    LOG_INF("Initializing SD card...");
-
-    LOG_INF("Checking if the SD device is available...");
     // Check if the SD device is available
     if (!device_is_ready(DEVICE_DT_GET(DT_NODELABEL(spi3))))
     {
         LOG_ERR("SD device is not ready");
         return -ENODEV;
     }
-    // Log the device name
-    LOG_INF("SD device is available: %s", DEVICE_DT_GET(DT_NODELABEL(spi3)));
     k_sleep(K_MSEC(1000));
 
     // Try to initialize disk access =============================================================================================
-    LOG_INF("Calling disk_access_init...");
     ret = disk_access_init(sd_dev);
     if (ret != 0)
     {
@@ -502,10 +496,9 @@ int sd_card_init(void)
         return ret;
     }
     LOG_INF("disk_access_init successful: %d", ret);
-    k_sleep(K_MSEC(100));
+    k_sleep(K_MSEC(200));
 
     // Check disk status =============================================================================================
-    LOG_INF("Checking disk status...");
     ret = disk_access_status(sd_dev);
     if (ret != DISK_STATUS_OK)
     {
@@ -513,34 +506,28 @@ int sd_card_init(void)
         return ret;
     }
     LOG_INF("disk_access_status successful: %d", ret);
-    k_sleep(K_MSEC(100));
+    k_sleep(K_MSEC(200));
 
     // Try to get sector count =============================================================================================
-    LOG_INF("Getting sector count...");
     ret = disk_access_ioctl(sd_dev, DISK_IOCTL_GET_SECTOR_COUNT, &sector_count);
     if (ret != 0)
     {
         LOG_ERR("Failed to get sector count (err %d)", ret);
         return ret;
     }
-    LOG_INF("Sector count: %d", sector_count);
-    k_sleep(K_MSEC(100));
-
-    // Try to get sector size =============================================================================================
-    LOG_INF("Getting sector size...");
     ret = disk_access_ioctl(sd_dev, DISK_IOCTL_GET_SECTOR_SIZE, &sector_size);
     if (ret != 0)
     {
         LOG_ERR("Failed to get sector size (err %d)", ret);
         return ret;
     }
+    LOG_INF("Sector count: %d", sector_count);
     LOG_INF("Sector size: %d bytes", sector_size);
     sd_card_size_bytes = (uint64_t)sector_count * sector_size;
     LOG_INF("SD card volume size: %d MB", (uint32_t)(sd_card_size_bytes >> 20));
-    k_sleep(K_MSEC(100));
+    k_sleep(K_MSEC(200));
 
     // Try to mount the filesystem =============================================================================================
-    LOG_INF("Mounting filesystem...");
     mnt_pt.mnt_point = sd_root_path; // add the sd_root_path to the mnt_pt struct
     ret = fs_mount(&mnt_pt);
     if (ret != 0)
@@ -549,7 +536,6 @@ int sd_card_init(void)
         return ret;
     }
     LOG_INF("SD card initialized and mounted successfully");
-
     // Add a longer delay after mounting
     k_sleep(K_MSEC(500));
 
@@ -562,19 +548,18 @@ int sd_card_init(void)
         return ret;
     }
     LOG_INF("Filesystem mounted at %s is accessible", mnt_pt.mnt_point);
-    sd_init_success = true; // indicate SD card is initialized for other funcs
     k_sleep(K_MSEC(100));
 
     // LIST FILES AND FIND THE HIGHEST SESSION NUMBER =============================================================
-    char list_buf[4096];
-    size_t buf_size = sizeof(list_buf);
-    ret = sd_card_list_files("/", list_buf, &buf_size);
-    if (ret != 0)
-    {
-        LOG_ERR("Failed to list files in root directory (err %d)", ret);
-        return ret;
-    }
-    LOG_INF("Files in root directory:\n%s", list_buf);
+    // char list_buf[4096];
+    // size_t buf_size = sizeof(list_buf);
+    // ret = sd_card_list_files("/", list_buf, &buf_size);
+    // if (ret != 0)
+    // {
+    //     LOG_ERR("Failed to list files in root directory (err %d)", ret);
+    //     return ret;
+    // }
+    // LOG_INF("Files in root directory:\n%s", list_buf);
 
     // Find the highest existing session number
     int highest_session = find_highest_session_number();
@@ -602,139 +587,190 @@ int sd_card_init(void)
         return ret;
     }
 
+    sd_init_success = true; // indicate SD card is initialized for other funcs
     return 0;
 }
 
 // Static buffers to reduce stack usage
-static NeuralData data[MAX_STRUCTS_PER_WRITE];
-static char write_buffer[WRITE_BUFFER_SIZE];
+static NeuralData data_buffer[MAX_STRUCTS_PER_WRITE];
 static char filename[PATH_MAX_LEN + 1];
 
 void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
 {
     fifo_buffer_t *fifo_buffer = (fifo_buffer_t *)arg1;
     static uint32_t file_counter = 0;
-    size_t current_file_size = 0;
-    int64_t last_write_time = k_uptime_get();
-    size_t buffer_offset = 0;
+    size_t data_count = 0;
 
-    LOG_INF("SD card writer thread started");
-
-    // Wait for SD card initialization to complete
+    // Wait for SD card initialization
     while (!sd_init_success)
     {
         k_sleep(K_MSEC(100));
+        LOG_INF("Waiting for SD card initialization");
     }
-    LOG_INF("SD card initialization complete");
-
-    // Ensure the current_data_folder is set
-    if (strlen(current_data_folder) == 0)
-    {
-        LOG_ERR("Current data folder not set. Unable to write data.");
-        return;
-    }
-
-    LOG_INF("SD card writer thread initialized, writing to folder: %s", current_data_folder);
 
     while (1)
     {
-        LOG_INF("Starting new iteration of writer loop");
-        int sem_ret = k_sem_take(&fifo_buffer->data_available, K_MSEC(WRITE_INTERVAL_MS));
-        bool should_write = false;
-
-        if (sem_ret == 0)
+        // Wait for data to be available
+        int ret = k_sem_take(&fifo_buffer->data_available, K_MSEC(40));
+        if (ret != 0)
         {
-            LOG_INF("Semaphore taken, reading from FIFO buffer");
-            size_t structs_read = read_from_fifo_buffer(fifo_buffer, data, MAX_STRUCTS_PER_WRITE);
-            LOG_INF("Read %zu structs from FIFO buffer", structs_read);
+            continue;
+        }
 
-            if (structs_read > 0)
+        // Read data from FIFO buffer
+        size_t read_count = read_from_fifo_buffer(fifo_buffer, &data_buffer[data_count], MAX_NEURAL_DATA_PER_WRITE - data_count);
+        data_count += read_count;
+
+        // Write to SD card if buffer is full or we've read all available data
+        if (data_count == MAX_NEURAL_DATA_PER_WRITE || (read_count == 0 && data_count > 0))
+        {
+            snprintf(filename, PATH_MAX_LEN, "%s/data_%u.bin", current_data_folder, file_counter++);
+
+            size_t bytes_to_write = data_count * sizeof(NeuralData);
+            int ret = sd_card_open_write_close(filename, data_buffer, &bytes_to_write); // TODO LOOK INTO THIS FUNCTION
+            if (ret != 0)
             {
-                if (structs_read > MAX_STRUCTS_PER_WRITE)
-                {
-                    LOG_ERR("Read more structs than buffer can hold");
-                    structs_read = MAX_STRUCTS_PER_WRITE;
-                }
-
-                size_t bytes_to_write = structs_read * sizeof(NeuralData);
-                LOG_INF("Preparing to write %zu bytes", bytes_to_write);
-
-                // Check if we need to create a new file
-                if (current_file_size == 0 || current_file_size >= MAX_FILE_SIZE)
-                {
-                    LOG_INF("Creating new file");
-                    int ret = snprintf(filename, sizeof(filename), "%s/neural_data_%u.bin",
-                                       current_data_folder, file_counter++);
-                    if (ret < 0 || ret >= sizeof(filename))
-                    {
-                        LOG_ERR("Filename truncated or error in snprintf");
-                        k_sleep(K_MSEC(100));
-                        continue;
-                    }
-                    current_file_size = 0;
-                    LOG_INF("Created new file: %s", filename);
-                }
-
-                // Copy new data to buffer
-                if (buffer_offset + bytes_to_write > WRITE_BUFFER_SIZE)
-                {
-                    should_write = true;
-                    LOG_WRN("Write buffer full, forcing write");
-                }
-                else
-                {
-                    if (bytes_to_write <= sizeof(NeuralData) * MAX_STRUCTS_PER_WRITE)
-                    {
-                        LOG_INF("Copying %zu bytes to write buffer", bytes_to_write);
-                        memcpy(write_buffer + buffer_offset, data, bytes_to_write);
-                        buffer_offset += bytes_to_write;
-                        LOG_INF("Copied %zu bytes to write buffer, new offset: %zu", bytes_to_write, buffer_offset);
-                    }
-                    else
-                    {
-                        LOG_ERR("Attempted to write more data than buffer can hold");
-                    }
-                }
+                LOG_ERR("Failed to write to SD card, err: %d", ret);
             }
             else
             {
-                LOG_WRN("Semaphore signaled but no data read from FIFO buffer");
+                LOG_INF("Wrote %zu NeuralData structs (%zu bytes) to %s", data_count, bytes_to_write, filename);
             }
-        }
-        else
-        {
-            LOG_INF("Semaphore timeout, checking if write is needed");
+
+            data_count = 0;
         }
 
-        // Check if it's time to write
-        LOG_INF("Checking write conditions: should_write=%d, time_elapsed=%lld, buffer_offset=%zu",
-                should_write, (k_uptime_get() - last_write_time), buffer_offset);
-        if (should_write ||
-            (k_uptime_get() - last_write_time) >= WRITE_INTERVAL_MS ||
-            buffer_offset > (WRITE_BUFFER_SIZE / 2))
-        {
-            if (buffer_offset > 0)
-            {
-                LOG_INF("Attempting to write %zu bytes to %s", buffer_offset, filename);
-                int ret = sd_card_open_write_close(filename, write_buffer, &buffer_offset);
-                if (ret != 0)
-                {
-                    LOG_ERR("Failed to write buffer to SD card, err: %d", ret);
-                }
-                else
-                {
-                    LOG_INF("Successfully wrote %zu bytes to %s", buffer_offset, filename);
-                    current_file_size += buffer_offset;
-                    last_write_time = k_uptime_get();
-                }
-                buffer_offset = 0;
-                LOG_INF("Write complete, buffer_offset reset to 0");
-            }
-            else
-            {
-                LOG_INF("No data to write, skipping write operation");
-            }
-        }
-        LOG_INF("End of writer loop iteration");
+        k_sleep(K_MSEC(50)); // Small delay to prevent tight looping
     }
 }
+
+// static char write_buffer[WRITE_BUFFER_SIZE];
+// void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
+// {
+//     LOG_INF("SD card writer thread started");
+//     fifo_buffer_t *fifo_buffer = (fifo_buffer_t *)arg1;
+//     static uint32_t file_counter = 0;
+//     size_t current_file_size = 0;
+//     int64_t last_write_time = k_uptime_get();
+//     size_t buffer_offset = 0;
+
+//     // Wait for SD card initialization to complete
+//     while (!sd_init_success)
+//     {
+//         k_sleep(K_MSEC(100));
+//     }
+//     LOG_INF("SD card initialization complete");
+
+//     // Ensure the current_data_folder is set
+//     if (strlen(current_data_folder) == 0)
+//     {
+//         LOG_ERR("Current data folder not set. Unable to write data.");
+//         return;
+//     }
+
+//     LOG_INF("SD card writer thread initialized, writing to folder: %s", current_data_folder);
+
+//     while (1)
+//     {
+//         LOG_INF("Starting new iteration of writer loop");
+//         int sem_ret = k_sem_take(&fifo_buffer->data_available, K_NO_WAIT);
+//         bool should_write = false;
+
+//         if (sem_ret == 0)
+//         {
+//             // Read structs read from fifo buffer
+//             LOG_INF("Semaphore taken, reading from FIFO buffer");
+//             size_t structs_read = read_from_fifo_buffer(fifo_buffer, data, MAX_STRUCTS_PER_WRITE);
+//             LOG_INF("Read %zu structs from FIFO buffer", structs_read);
+
+//             if (structs_read > 0)
+//             {
+//                 if (structs_read > MAX_STRUCTS_PER_WRITE)
+//                 {
+//                     LOG_ERR("Read more structs than buffer can hold");
+//                     structs_read = MAX_STRUCTS_PER_WRITE;
+//                 }
+
+//                 // get number of bytes to write
+//                 size_t bytes_to_write = structs_read * sizeof(NeuralData);
+//                 LOG_INF("Preparing to write %zu bytes", bytes_to_write);
+
+//                 // Check if we need to create a new file, we do if the
+//                 if (current_file_size == 0 || current_file_size >= MAX_FILE_SIZE)
+//                 {
+//                     LOG_INF("Creating new file");
+//                     int ret = snprintf(filename, sizeof(filename), "%s/neural_data_%u.bin",
+//                                        current_data_folder, file_counter++);
+//                     if (ret < 0 || ret >= sizeof(filename))
+//                     {
+//                         LOG_ERR("Filename truncated or error in snprintf");
+//                         k_sleep(K_MSEC(100));
+//                         continue; // TODO: come out of loop if filename is broken
+//                     }
+//                     current_file_size = 0;
+//                     LOG_INF("Created new file: %s", filename);
+//                 }
+
+//                 // Copy new data to buffer
+//                 if (buffer_offset + bytes_to_write > WRITE_BUFFER_SIZE)
+//                 {
+//                     should_write = true;
+//                     LOG_WRN("Write buffer full, forcing write");
+//                 }
+//                 else
+//                 {
+//                     if (bytes_to_write <= sizeof(NeuralData) * MAX_STRUCTS_PER_WRITE)
+//                     {
+//                         LOG_INF("Copying %zu bytes to write buffer", bytes_to_write);
+//                         memcpy(write_buffer + buffer_offset, data, bytes_to_write); // copy data to write buffer
+//                         buffer_offset += bytes_to_write;
+//                         LOG_INF("Copied %zu bytes to write buffer, new offset: %zu", bytes_to_write, buffer_offset);
+//                     }
+//                     else
+//                     {
+//                         LOG_ERR("Attempted to write more data than buffer can hold");
+//                     }
+//                 }
+//             }
+//             else
+//             {
+//                 LOG_WRN("Semaphore signaled but no data read from FIFO buffer");
+//             }
+//         }
+//         else
+//         {
+//             LOG_INF("Semaphore timeout, checking if write is needed");
+//         }
+
+//         // Check if it's time to write
+//         LOG_INF("Checking write conditions: should_write=%d, time_elapsed=%lld, buffer_offset=%zu",
+//                 should_write, (k_uptime_get() - last_write_time), buffer_offset);
+//         if (should_write ||
+//             (k_uptime_get() - last_write_time) >= WRITE_INTERVAL_MS ||
+//             buffer_offset > (WRITE_BUFFER_SIZE / 2))
+//         {
+//             if (buffer_offset > 0)
+//             {
+//                 LOG_INF("Attempting to write %zu bytes to %s", buffer_offset, filename);
+//                 int ret = sd_card_open_write_close(filename, write_buffer, &buffer_offset);
+//                 if (ret != 0)
+//                 {
+//                     LOG_ERR("Failed to write buffer to SD card, err: %d", ret);
+//                 }
+//                 else
+//                 {
+//                     LOG_INF("Successfully wrote %zu bytes to %s", buffer_offset, filename);
+//                     current_file_size += buffer_offset;
+//                     last_write_time = k_uptime_get();
+//                 }
+//                 buffer_offset = 0;
+//                 LOG_INF("Write complete, buffer_offset reset to 0");
+//             }
+//             else
+//             {
+//                 LOG_INF("No data to write, skipping write operation");
+//             }
+//         }
+//         LOG_INF("End of writer loop iteration");
+//     }
+// }

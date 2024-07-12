@@ -10,7 +10,7 @@
 #include "../inc/neural_data.h"
 #include "../inc/fifo_buffer.h"
 
-#define SAMPLE_RATE_HZ 136
+#define SAMPLE_RATE_HZ 2
 
 // Registering the module with the logging system
 LOG_MODULE_REGISTER(fakedata, LOG_LEVEL_INF);
@@ -25,12 +25,23 @@ void fakedata_thread(void *arg1, void *arg2, void *arg3)
     NeuralData data;                                    // Declare the data structure to hold neural data
     uint16_t counter[MAX_CHANNELS] = {0};               // Initialize counters for each channel
     int64_t start_time = k_uptime_get();                // Record the start time for timestamp calculations
+    static int log_counter = 0;
 
     /* Infinite loop to continuously generate data */
     while (1)
     {
-        data.timestamp = (uint32_t)(k_uptime_get() - start_time); // Update the timestamp for the data
+        // Check FIFO buffer fill level before generating new data
+        if (get_fifo_fill_percentage(fifo_buffer) > 90)
+        {
+            if (log_counter++ % 50 == 0)
+            {
+                LOG_WRN("FIFO buffer nearly full, skipping data generation");
+            }
+            k_sleep(K_MSEC(50));
+            continue;
+        }
 
+        data.timestamp = (uint32_t)(k_uptime_get() - start_time); // Update the timestamp for the data
         // Generate data for each channel
         for (int i = 0; i < MAX_CHANNELS; i++)
         {

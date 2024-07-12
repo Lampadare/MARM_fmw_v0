@@ -10,6 +10,9 @@
 #include "../inc/neural_data.h"
 
 LOG_MODULE_REGISTER(fifo_buffer, LOG_LEVEL_INF);
+// Only log every 100th operation or when fill percentage changes significantly
+static int log_counter = 0;
+static float last_fill_percentage = 0;
 
 void init_fifo_buffer(fifo_buffer_t *fifo_buffer)
 {
@@ -25,30 +28,41 @@ size_t read_from_fifo_buffer(fifo_buffer_t *fifo_buffer, NeuralData *data, size_
     size_t structs_read = 0;
     bool was_above_threshold = false;
 
-    k_mutex_lock(&fifo_buffer->mutex, K_FOREVER);
+    int ret = k_mutex_lock(&fifo_buffer->mutex, K_NO_WAIT);
+    if (ret != 0)
+    {
+        LOG_WRN("Failed to acquire mutex, error: %d", ret);
+        k_mutex_unlock(&fifo_buffer->mutex);
+        return 0;
+    }
 
     // Check if the buffer was above 50% before reading
     was_above_threshold = fifo_buffer->size >= (FIFO_BUFFER_SIZE / 2);
 
     while (structs_read < max_size && fifo_buffer->size > 0)
     {
-        *data = fifo_buffer->buffer[fifo_buffer->head];
+        *data = fifo_buffer->buffer[fifo_buffer->head]; // get the pointer to the head in the buffer
         fifo_buffer->head = (fifo_buffer->head + 1) % FIFO_BUFFER_SIZE;
         fifo_buffer->size--;
         data++;
         structs_read++;
     }
 
-    float fill_percentage = (float)fifo_buffer->size / FIFO_BUFFER_SIZE * 100;
-    LOG_INF("FIFO Buffer fill: %.2f%% (read %zu structs)", fill_percentage, structs_read);
-
-    // Check if the buffer has fallen below 50% capacity
-    if (was_above_threshold && fifo_buffer->size < (FIFO_BUFFER_SIZE / 2))
+    // In read_from_fifo_buffer and write_to_fifo_buffer:
+    int fill_percentage = (int)((fifo_buffer->size * 100) / FIFO_BUFFER_SIZE);
+    if (log_counter++ % 100 == 0 || (fill_percentage - last_fill_percentage > 5) || (last_fill_percentage - fill_percentage > 5))
     {
-        // Reset the semaphore when falling below 50% threshold
-        k_sem_reset(&fifo_buffer->data_available);
-        LOG_INF("Buffer fell below 50 percent capacity, reset data availability signal");
+        LOG_INF("FIFO Buffer fill: %d%% (read %zu structs)", fill_percentage, structs_read);
+        last_fill_percentage = fill_percentage;
     }
+
+    // Sem taken in SD card writer thread
+    // if (was_above_threshold && fifo_buffer->size < (FIFO_BUFFER_SIZE / 2))
+    // {
+    //     // Reset the semaphore when falling below 50% threshold
+    //     k_sem_take(&fifo_buffer->data_available, K_NO_WAIT);
+    //     LOG_INF("Buffer fell below 50 percent capacity, reset data availability signal");
+    // }
 
     k_mutex_unlock(&fifo_buffer->mutex);
 
@@ -60,7 +74,13 @@ size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, 
     size_t structs_written = 0;
     bool was_below_threshold = false;
 
-    k_mutex_lock(&fifo_buffer->mutex, K_FOREVER);
+    int ret = k_mutex_lock(&fifo_buffer->mutex, K_NO_WAIT);
+    if (ret != 0)
+    {
+        LOG_WRN("Failed to acquire mutex, error: %d", ret);
+        k_mutex_unlock(&fifo_buffer->mutex);
+        return 0;
+    }
 
     // Check if the buffer was below 50% before writing
     was_below_threshold = fifo_buffer->size < (FIFO_BUFFER_SIZE / 2);
@@ -74,13 +94,18 @@ size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, 
         structs_written++;
     }
 
-    float fill_percentage = (float)fifo_buffer->size / FIFO_BUFFER_SIZE * 100;
-    LOG_INF("FIFO Buffer fill: %.2f%% (wrote %zu structs)", fill_percentage, structs_written);
-
-    if (structs_written < size)
+    // In read_from_fifo_buffer and write_to_fifo_buffer:
+    int fill_percentage = (int)((fifo_buffer->size * 100) / FIFO_BUFFER_SIZE);
+    if (log_counter++ % 100 == 0 || (fill_percentage - last_fill_percentage > 5) || (last_fill_percentage - fill_percentage > 5))
     {
-        LOG_WRN("FIFO Buffer full, dropped %zu structs", size - structs_written);
+        LOG_INF("FIFO Buffer fill: %d%% (wrote %zu structs)", fill_percentage, structs_written);
+        last_fill_percentage = fill_percentage;
     }
+
+    // if (structs_written < size)
+    // {
+    //     LOG_WRN("FIFO Buffer full, dropped %zu structs", size - structs_written);
+    // }
 
     // Check if the buffer has reached or exceeded 50% capacity
     if (was_below_threshold && fifo_buffer->size >= (FIFO_BUFFER_SIZE / 2))
@@ -93,4 +118,9 @@ size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, 
     k_mutex_unlock(&fifo_buffer->mutex);
 
     return structs_written;
+}
+
+int get_fifo_fill_percentage(fifo_buffer_t *fifo_buffer)
+{
+    return (fifo_buffer->size / FIFO_BUFFER_SIZE) * 100;
 }
