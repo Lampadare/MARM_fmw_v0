@@ -34,7 +34,6 @@ static struct fs_mount_t mnt_pt = {
 
 static char current_data_folder[PATH_MAX_LEN + 1];
 
-#define MAX_STRUCTS_PER_WRITE 100
 #define WRITE_INTERVAL_MS 500
 #define MAX_FILE_SIZE (76128)     // 76 KB - equivalent to 2.4 seconds recording (including timestamps)
 #define WRITE_BUFFER_SIZE (25376) // 25 KB write buffer (0.8 second of recording)
@@ -592,7 +591,7 @@ int sd_card_init(void)
 }
 
 // Static buffers to reduce stack usage
-static NeuralData data_buffer[MAX_STRUCTS_PER_WRITE];
+static NeuralData data_buffer[MAX_NEURAL_DATA_PER_WRITE];
 static char filename[PATH_MAX_LEN + 1];
 
 void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
@@ -616,6 +615,8 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
         {
             continue;
         }
+
+        LOG_INF("Data sem taken, reading from FIFO buffer");
 
         // Read data from FIFO buffer
         size_t read_count = read_from_fifo_buffer(fifo_buffer, &data_buffer[data_count], MAX_NEURAL_DATA_PER_WRITE - data_count);
