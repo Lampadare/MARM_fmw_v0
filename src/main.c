@@ -267,17 +267,17 @@ int main(void)
 
 	// Create threads dynamically ============================================================
 
-	// k_thread_create(&neural_data_notify_thread_data, neural_data_notify_stack,
-	// 				K_THREAD_STACK_SIZEOF(neural_data_notify_stack),
-	// 				neural_data_notify_thread, NULL, NULL, NULL,
-	// 				NEURAL_DATA_NOTIFY_PRIORITY, 0, K_MSEC(500));
-	// LOG_INF("Neural data notify thread created");
+	k_thread_create(&neural_data_notify_thread_data, neural_data_notify_stack,
+					K_THREAD_STACK_SIZEOF(neural_data_notify_stack),
+					neural_data_notify_thread, NULL, NULL, NULL,
+					NEURAL_DATA_NOTIFY_PRIORITY, 0, K_MSEC(500));
+	LOG_INF("Neural data notify thread created");
 
-	// k_thread_create(&status_notify_thread_data, status_notify_stack,
-	// 				K_THREAD_STACK_SIZEOF(status_notify_stack),
-	// 				status_notify_thread, NULL, NULL, NULL,
-	// 				STATUS_NOTIFY_PRIORITY, 0, K_MSEC(1000));
-	// LOG_INF("Status notify thread created");
+	k_thread_create(&status_notify_thread_data, status_notify_stack,
+					K_THREAD_STACK_SIZEOF(status_notify_stack),
+					status_notify_thread, NULL, NULL, NULL,
+					STATUS_NOTIFY_PRIORITY, 0, K_MSEC(1000));
+	LOG_INF("Status notify thread created");
 
 	k_thread_create(&fakedata_thread_data, fakedata_stack,
 					FAKEDATA_THREAD_STACK_SIZE,
