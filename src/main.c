@@ -282,13 +282,13 @@ int main(void)
 	k_thread_create(&fakedata_thread_data, fakedata_stack,
 					FAKEDATA_THREAD_STACK_SIZE,
 					fakedata_thread, &fifo_buffer, NULL, NULL,
-					FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(2000));
+					FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
 	LOG_INF("Fakedata thread created");
 
 	k_thread_create(&sd_card_thread_data, sd_card_stack,
 					SD_CARD_THREAD_STACK_SIZE,
 					sd_card_writer_thread, &fifo_buffer, NULL, NULL,
-					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(3000));
+					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(10500));
 	LOG_INF("SD card writer thread created");
 
 	LOG_INF("=======!!! All threads created successfully !!!======= \n");

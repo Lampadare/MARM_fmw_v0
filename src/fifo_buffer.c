@@ -108,7 +108,7 @@ size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, 
     // }
 
     // Check if the buffer has reached or exceeded 50% capacity
-    if (was_below_threshold && fifo_buffer->size >= (FIFO_BUFFER_SIZE / 2))
+    if (fifo_buffer->size >= (FIFO_BUFFER_SIZE / 2))
     {
         // Signal that data is available only when crossing the 50% threshold
         k_sem_give(&fifo_buffer->data_available);

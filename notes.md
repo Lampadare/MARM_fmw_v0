@@ -1,7 +1,6 @@
 TODO:
 
-- Implement SD card write
-- Implement SD card thread write from fifo
+- implement sem to 100 for preventing fifo fillup
 - setup SPI intan overlay
 - setup intan driver
 - implement intan read
@@ -20,3 +19,5 @@ Done:
 - do we need notifications for this to be the case?
 - understand devicetree overlays
 - setup SD card device tree overlay
+- Implement SD card write
+- Implement SD card thread write from fifo
