@@ -38,7 +38,7 @@ static char current_data_folder[PATH_MAX_LEN + 1];
 #define WRITE_INTERVAL_MS 500
 #define MAX_FILE_SIZE (76128)     // 76 KB - equivalent to 2.4 seconds recording (including timestamps)
 #define WRITE_BUFFER_SIZE (25376) // 25 KB write buffer (0.8 second of recording)
-#define MAX_NEURAL_DATA_PER_WRITE (WRITE_BUFFER_SIZE / sizeof(NeuralData))
+#define MAX_NEURAL_DATA_PER_WRITE 100
 
 K_THREAD_STACK_DEFINE(sd_card_stack, SD_CARD_THREAD_STACK_SIZE);
 struct k_thread sd_card_thread_data; // Declare the thread data structure for the fakedata thread
@@ -621,12 +621,16 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
         size_t read_count = read_from_fifo_buffer(fifo_buffer, &data_buffer[data_count], MAX_NEURAL_DATA_PER_WRITE - data_count);
         data_count += read_count;
 
+        LOG_INF("Read %zu NeuralData structs from FIFO buffer now in data_count", read_count);
+        LOG_INF("Should we write: %d", (data_count == MAX_NEURAL_DATA_PER_WRITE));
+
         // Write to SD card if buffer is full or we've read all available data
         if (data_count == MAX_NEURAL_DATA_PER_WRITE || (read_count == 0 && data_count > 0))
         {
             snprintf(filename, PATH_MAX_LEN, "%s/data_%u.bin", current_data_folder, file_counter++);
 
             size_t bytes_to_write = data_count * sizeof(NeuralData);
+            LOG_INF("About to write %zu bytes to file: %s", bytes_to_write, filename);
             int ret = sd_card_open_write_close(filename, data_buffer, &bytes_to_write); // TODO LOOK INTO THIS FUNCTION
             if (ret != 0)
             {
