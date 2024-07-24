@@ -1208,6 +1208,14 @@ zephyr_udc0: &usbd {
     label = "PWM0";
 };
 
+&spi2 {
+    status = "okay";
+    label = "SPI2";
+    cs-gpios = <&gpio0 22 (1 << 0)>;
+    pinctrl-0 = <&spi2_default>;
+    pinctrl-1 = <&spi2_sleep>;
+    pinctrl-names = "default", "sleep";
+};
 
 &spi3 {
     status = "okay";
