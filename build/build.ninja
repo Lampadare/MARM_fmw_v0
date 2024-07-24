@@ -275,7 +275,7 @@ build CMakeFiles/menuconfig | ${cmake_ninja_workdir}CMakeFiles/menuconfig: CUSTO
 # Custom command for CMakeFiles/boards
 
 build CMakeFiles/boards | ${cmake_ninja_workdir}CMakeFiles/boards: CUSTOM_COMMAND
-  COMMAND = cd /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build && /opt/nordic/ncs/toolchains/580e4ef81c/opt/python@3.9/bin/python3.9 /opt/nordic/ncs/v2.6.1/zephyr/scripts/list_boards.py --board-root=/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0 --board-root=/opt/nordic/ncs/v2.6.1/nrf --board-root=/opt/nordic/ncs/v2.6.1/zephyr --arch-root=/opt/nordic/ncs/v2.6.1/zephyr
+  COMMAND = cd /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build && /opt/nordic/ncs/toolchains/580e4ef81c/opt/python@3.9/bin/python3.9 /opt/nordic/ncs/v2.6.1/zephyr/scripts/list_boards.py --board-root=/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0 --board-root=/Users/Martin/Desktop/HBR/Masters/fmw_tests/intan_tests --board-root=/opt/nordic/ncs/v2.6.1/nrf --board-root=/opt/nordic/ncs/v2.6.1/zephyr --arch-root=/opt/nordic/ncs/v2.6.1/zephyr
   pool = console
 
 

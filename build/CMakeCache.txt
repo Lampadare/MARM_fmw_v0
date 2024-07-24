@@ -30,7 +30,7 @@ BOARD_DIR:PATH=/opt/nordic/ncs/v2.6.1/zephyr/boards/arm/nrf52840dk_nrf52840
 BOARD_EXTENSIONS:BOOL=ON
 
 //No help, variable specified on the command line.
-BOARD_ROOT:UNINITIALIZED=/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0
+BOARD_ROOT:UNINITIALIZED=/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0;/Users/Martin/Desktop/HBR/Masters/fmw_tests/intan_tests
 
 //Path to a program.
 BOSSAC:FILEPATH=BOSSAC-NOTFOUND
