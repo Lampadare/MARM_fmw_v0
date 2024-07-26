@@ -56,7 +56,7 @@ BT_GATT_SERVICE_DEFINE(
         BT_GATT_PERM_READ | BT_GATT_PERM_NONE,
         read_neural_data,
         NULL,
-        &latest_neural_data),
+        &latest_neural_data.data),
 
     BT_GATT_CCC(nbs_neural_data_ccc_cfg_changed,
                 BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
@@ -73,16 +73,16 @@ BT_GATT_SERVICE_DEFINE(
                 BT_GATT_PERM_READ | BT_GATT_PERM_WRITE));
 
 /* Send notifications for the neural data characteristic */
-int nbs_send_neural_data_notify(NeuralData *latest_neural_data)
+int nbs_send_neural_data_notify(NeuralData *neural_data)
 {
-    if (!notify_device_status_enabled)
+    if (!notify_neural_data_enabled)
     {
         return -EACCES;
     }
 
     return bt_gatt_notify(NULL, &my_lbs_svc.attrs[1],
-                          latest_neural_data,
-                          sizeof(*latest_neural_data));
+                          neural_data,
+                          sizeof(*neural_data));
 }
 
 /* Send notifications for the system status characteristic */

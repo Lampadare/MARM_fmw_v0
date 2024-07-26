@@ -13,6 +13,7 @@ target_sources(app PRIVATE
   src/fakedata_module.c
   src/fifo_buffer.c
   src/sd_card.c
+  src/intan.c
 )
 
 # NORDIC SDK APP END

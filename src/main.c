@@ -14,6 +14,7 @@
 #include "../inc/fifo_buffer.h"
 #include "../inc/fakedata_module.h"
 #include "../inc/sd_card.h"
+#include "../inc/intan.h"
 
 static struct bt_le_adv_param *adv_param = BT_LE_ADV_PARAM(
 	(BT_LE_ADV_OPT_CONNECTABLE |
@@ -31,6 +32,7 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define SD_CARD_THREAD_PRIORITY 3
 #define NEURAL_DATA_NOTIFY_PRIORITY 4
 #define FAKEDATA_THREAD_PRIORITY 3
+#define INTAN_THREAD_PRIORITY 2
 
 #define NEURAL_DATA_NOTIFY_STACK_SIZE 8192
 #define SYSTEM_STATUS_NOTIFY_STACK_SIZE 8192
@@ -53,9 +55,11 @@ static void exchange_func(struct bt_conn *conn, uint8_t att_err, struct bt_gatt_
 static fifo_buffer_t fifo_buffer;
 
 /* Fake latest neural data */
-NeuralData latest_neural_data = {
-	.channels = {{{0}}}, // Initialize all channels to zero
-	.timestamp = 0};
+LatestNeuralData latest_neural_data = {
+	.data = {
+		.channel_data = {0},
+		.timestamp = 0},
+	.sent = true};
 
 // Define and initialize the device status with default values
 DeviceStatus device_status = {
@@ -127,7 +131,12 @@ void neural_data_notify_thread(void *p1, void *p2, void *p3)
 {
 	while (1)
 	{
-		nbs_send_neural_data_notify(&latest_neural_data);
+		// Check if there's new data to send
+		if (!latest_neural_data.sent)
+		{
+			nbs_send_neural_data_notify(&latest_neural_data.data);
+			latest_neural_data.sent = true; // Mark as sent
+		}
 		k_sleep(K_MSEC(NEURAL_DATA_NOTIFY_INTERVAL));
 	}
 }
@@ -279,11 +288,17 @@ int main(void)
 					STATUS_NOTIFY_PRIORITY, 0, K_MSEC(1000));
 	LOG_INF("Status notify thread created");
 
-	k_thread_create(&fakedata_thread_data, fakedata_stack,
-					FAKEDATA_THREAD_STACK_SIZE,
-					fakedata_thread, &fifo_buffer, NULL, NULL,
-					FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
-	LOG_INF("Fakedata thread created");
+	// k_thread_create(&fakedata_thread_data, fakedata_stack,
+	// 				FAKEDATA_THREAD_STACK_SIZE,
+	// 				fakedata_thread, &fifo_buffer, NULL, NULL,
+	// 				FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
+	// LOG_INF("Fakedata thread created");
+
+	k_thread_create(&intan_thread_data, intan_stack,
+					INTAN_THREAD_STACK_SIZE,
+					intan_thread, &fifo_buffer, NULL, NULL,
+					INTAN_THREAD_PRIORITY, 0, K_MSEC(10000));
+	LOG_INF("Intan thread created");
 
 	k_thread_create(&sd_card_thread_data, sd_card_stack,
 					SD_CARD_THREAD_STACK_SIZE,

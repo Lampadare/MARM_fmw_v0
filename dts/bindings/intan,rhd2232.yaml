@@ -1,0 +1,5 @@
+description: Intan RHD2232 device binding
+
+compatible: "intan,rhd2232"
+
+include: [sensor-device.yaml, spi-device.yaml]

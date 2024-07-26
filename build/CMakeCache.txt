@@ -422,7 +422,7 @@ Zephyr_DIR:PATH=/opt/nordic/ncs/v2.6.1/zephyr/share/zephyr-package/cmake
 //The application configuration folder
 APPLICATION_CONFIG_DIR:INTERNAL=/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0
 //DT bindings root directories
-CACHED_DTS_ROOT_BINDINGS:INTERNAL=/opt/nordic/ncs/v2.6.1/nrf/dts/bindings;/opt/nordic/ncs/v2.6.1/zephyr/dts/bindings
+CACHED_DTS_ROOT_BINDINGS:INTERNAL=/opt/nordic/ncs/v2.6.1/nrf/dts/bindings;/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/dts/bindings;/opt/nordic/ncs/v2.6.1/zephyr/dts/bindings
 //ADVANCED property for variable: CMAKE_ADDR2LINE
 CMAKE_ADDR2LINE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_AR

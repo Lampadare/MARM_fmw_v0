@@ -6,22 +6,21 @@
 #include <zephyr/kernel.h>
 
 #define MAX_CHANNELS 16
-#define MAX_BYTES_PER_CHANNEL 15
 
-// Structure to hold neural data for one channel
+// Structure to hold ONE SAMPLE of neural data (totals 288 bits = 36 bytes)
 typedef struct
 {
-    uint8_t data[MAX_BYTES_PER_CHANNEL];
-} NeuralChannelData;
-
-// Structure to hold neural data for all channels
-typedef struct
-{
-    NeuralChannelData channels[MAX_CHANNELS];
-    uint32_t timestamp; // 32-bit timestamp in milliseconds
+    uint16_t channel_data[MAX_CHANNELS];
+    uint32_t timestamp;
 } NeuralData;
 
 // Declare the global variable
-extern NeuralData latest_neural_data;
+typedef struct
+{
+    NeuralData data;
+    bool sent;
+} LatestNeuralData;
+
+extern LatestNeuralData latest_neural_data;
 
 #endif // NEURAL_DATA_H

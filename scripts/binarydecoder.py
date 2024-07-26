@@ -5,30 +5,29 @@ import argparse
 
 # Constants from neural_data.h
 MAX_CHANNELS = 16
-MAX_BYTES_PER_CHANNEL = 15
 
 def decode_binary_file(input_file, output_file):
     with open(input_file, 'rb') as bin_file, open(output_file, 'w', newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
         
         # Write CSV header
-        header = ['timestamp'] + [f'ch{i+1}_byte{j+1}' for i in range(MAX_CHANNELS) for j in range(MAX_BYTES_PER_CHANNEL)]
+        header = ['timestamp'] + [f'ch{i+1}' for i in range(MAX_CHANNELS)]
         csv_writer.writerow(header)
         
         # Read and decode binary data
         while True:
-            # Read one NeuralData struct
-            binary_data = bin_file.read(4 + MAX_CHANNELS * MAX_BYTES_PER_CHANNEL)
+            # Read one NeuralData struct (36 bytes: 32 bytes for channel data + 4 bytes for timestamp)
+            binary_data = bin_file.read(36)
             if not binary_data:
                 break  # End of file
             
-            if len(binary_data) != 4 + MAX_CHANNELS * MAX_BYTES_PER_CHANNEL:
-                print(f"Warning: Incomplete data at the end of the file. Expected {4 + MAX_CHANNELS * MAX_BYTES_PER_CHANNEL} bytes, got {len(binary_data)}.")
+            if len(binary_data) != 36:
+                print(f"Warning: Incomplete data at the end of the file. Expected 36 bytes, got {len(binary_data)}.")
                 break
             
             # Unpack the binary data
-            timestamp = struct.unpack('<I', binary_data[:4])[0]  # 32-bit unsigned int, little-endian
-            channel_data = struct.unpack(f'<{MAX_CHANNELS * MAX_BYTES_PER_CHANNEL}B', binary_data[4:])
+            channel_data = struct.unpack('<16H', binary_data[:32])  # 16 unsigned shorts (16-bit), little-endian
+            timestamp = struct.unpack('<I', binary_data[32:])[0]  # 32-bit unsigned int, little-endian
             
             # Prepare row data
             row = [timestamp] + list(channel_data)
