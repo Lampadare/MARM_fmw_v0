@@ -36,8 +36,8 @@ static const u16_t NINE_DUMMPY[9] = {0xFF00, 0xFF00, 0xFF00, 0xFF00, 0xFF00, 0xF
 #define Register3 0x8302 // diable tempS and digout
 #define Register4 0x84B0 // absmode enable + unsigned ADC + weak MISO + DSP high-pass filter enable(differentiator)
 // Impedance check
-#define Register5 0x8500 // Impedance check control ,which is disable
-#define Register6 0x8600 // DAC output voltage ,there is 0
+#define Register5 0x8500 // Impedance check control, disable
+#define Register6 0x8600 // DAC output voltage, there is 0
 #define Register7 0x8700 // Impedance check electrode select, this is 0
 // on-chip Amplifier bandwidth Select
 #define Register8 0x882C //  using 20-150 Hz bandwidth
@@ -59,7 +59,7 @@ struct spi_dt_spec spispec = SPI_DT_SPEC_GET(DT_NODELABEL(rhd2232), SPIOP, 0);
 // timer =======================================================================================
 struct k_timer RHD_timer;
 extern void my_timer_handler(struct k_timer *timer_id); // cb function call
-#define SAMPLE_RATE_HZ 130
+#define SAMPLE_RATE_HZ 1200
 int64_t start_time = 0; // Record the start time for timestamp calculations
 
 // RHD_CS ================================================================================

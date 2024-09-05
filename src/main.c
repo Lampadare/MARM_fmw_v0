@@ -38,7 +38,7 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define SYSTEM_STATUS_NOTIFY_STACK_SIZE 8192
 
 #define SYSTEM_STATUS_NOTIFY_INTERVAL 1 // system status notify interval in seconds
-#define NEURAL_DATA_NOTIFY_INTERVAL 4	// neural data notify interval in milliseconds
+#define NEURAL_DATA_NOTIFY_INTERVAL 1	// neural data notify interval in milliseconds
 
 // Define thread stacks
 K_THREAD_STACK_DEFINE(neural_data_notify_stack, NEURAL_DATA_NOTIFY_STACK_SIZE);

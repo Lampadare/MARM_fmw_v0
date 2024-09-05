@@ -35,9 +35,9 @@ static struct fs_mount_t mnt_pt = {
 static char current_data_folder[PATH_MAX_LEN + 1];
 
 #define WRITE_INTERVAL_MS 500
-#define MAX_FILE_SIZE (76128)     // 76 KB - equivalent to 2.4 seconds recording (including timestamps)
-#define WRITE_BUFFER_SIZE (25376) // 25 KB write buffer (0.8 second of recording)
-#define MAX_NEURAL_DATA_PER_WRITE 100
+#define MAX_FILE_SIZE (76128) // 76 KB - equivalent to 2.4 seconds recording (including timestamps)
+// #define WRITE_BUFFER_SIZE (25376) // 25 KB write buffer (0.8 second of recording)
+#define MAX_NEURAL_DATA_PER_WRITE 100 // 100 NeuralData structs per write
 
 K_THREAD_STACK_DEFINE(sd_card_stack, SD_CARD_THREAD_STACK_SIZE);
 struct k_thread sd_card_thread_data; // Declare the thread data structure for the fakedata thread
