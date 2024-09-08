@@ -12,6 +12,7 @@
 extern struct k_thread intan_thread_data;
 extern k_thread_stack_t intan_stack[];
 
+int intan_init(fifo_buffer_t *fifo_buffer);
 void intan_thread(void *arg1, void *arg2, void *arg3);
 
 #endif // INTAN_H

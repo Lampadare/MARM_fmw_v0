@@ -9,7 +9,7 @@
 #include "../inc/neural_data.h"
 
 // Half a second of data to be buffered, represents roughly 200 neural data items
-#define FIFO_BUFFER_SIZE 200
+#define FIFO_BUFFER_SIZE 300
 #define MAX_FIFO_DATA_SIZE 244
 
 typedef struct

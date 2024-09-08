@@ -7,6 +7,7 @@
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/sys/reboot.h>
 
 #include "../inc/neuralbs.h"
 #include "../inc/device_status.h"
@@ -32,7 +33,7 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define SD_CARD_THREAD_PRIORITY 3
 #define NEURAL_DATA_NOTIFY_PRIORITY 4
 #define FAKEDATA_THREAD_PRIORITY 3
-#define INTAN_THREAD_PRIORITY 2
+#define INTAN_THREAD_PRIORITY 1
 
 #define NEURAL_DATA_NOTIFY_STACK_SIZE 8192
 #define SYSTEM_STATUS_NOTIFY_STACK_SIZE 8192
@@ -47,6 +48,7 @@ K_THREAD_STACK_DEFINE(status_notify_stack, SYSTEM_STATUS_NOTIFY_STACK_SIZE);
 // Declare thread IDs
 static struct k_thread neural_data_notify_thread_data;
 static struct k_thread status_notify_thread_data;
+static K_SEM_DEFINE(ble_conn_sem, 0, 1);
 
 struct bt_conn *my_conn = NULL;
 static struct bt_gatt_exchange_params exchange_params;
@@ -167,6 +169,9 @@ static void on_connected(struct bt_conn *conn, uint8_t err)
 	update_mtu(my_conn);
 
 	printk("Connected\n");
+
+	// Release the semaphore to indicate a connection has been established
+	k_sem_give(&ble_conn_sem);
 }
 
 static void on_disconnected(struct bt_conn *conn, uint8_t reason)
@@ -240,6 +245,7 @@ int main(void)
 	if (err)
 	{
 		LOG_ERR("SD card initialization failed (err %d)", err);
+		sys_reboot(SYS_REBOOT_COLD);
 		return -1;
 	}
 	LOG_INF("SD card initialized");
@@ -250,6 +256,7 @@ int main(void)
 	if (err)
 	{
 		LOG_ERR("Bluetooth init failed (err %d)\n", err);
+		sys_reboot(SYS_REBOOT_COLD);
 		return -1;
 	}
 	bt_conn_cb_register(&connection_callbacks);
@@ -261,9 +268,21 @@ int main(void)
 	if (err)
 	{
 		LOG_ERR("Advertising failed to start (err %d)", err);
+		sys_reboot(SYS_REBOOT_COLD);
 		return -1;
 	}
 	LOG_INF("Advertising successfully started");
+
+	// Wait for connection
+	LOG_INF("Waiting for Bluetooth connection...");
+	err = k_sem_take(&ble_conn_sem, K_SECONDS(30)); // Wait for up to 30 seconds
+	if (err)
+	{
+		LOG_ERR("Failed to establish Bluetooth connection within timeout");
+		sys_reboot(SYS_REBOOT_COLD);
+		return -1;
+	}
+	LOG_INF("Bluetooth connection established");
 	k_sleep(K_MSEC(100));
 
 	// Initialize FIFO buffer ============================================================
@@ -294,17 +313,17 @@ int main(void)
 	// 				FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
 	// LOG_INF("Fakedata thread created");
 
-	k_thread_create(&intan_thread_data, intan_stack,
-					INTAN_THREAD_STACK_SIZE,
-					intan_thread, &fifo_buffer, NULL, NULL,
-					INTAN_THREAD_PRIORITY, 0, K_MSEC(10000));
-	LOG_INF("Intan thread created");
-
 	k_thread_create(&sd_card_thread_data, sd_card_stack,
 					SD_CARD_THREAD_STACK_SIZE,
 					sd_card_writer_thread, &fifo_buffer, NULL, NULL,
-					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(10500));
+					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(10000));
 	LOG_INF("SD card writer thread created");
+
+	k_thread_create(&intan_thread_data, intan_stack,
+					INTAN_THREAD_STACK_SIZE,
+					intan_thread, &fifo_buffer, NULL, NULL,
+					INTAN_THREAD_PRIORITY, 0, K_MSEC(10500));
+	LOG_INF("Intan thread created");
 
 	LOG_INF("=======!!! All threads created successfully !!!======= \n");
 
