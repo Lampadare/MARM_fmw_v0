@@ -8,7 +8,7 @@
 #include <zephyr/kernel.h>
 #include "../inc/neural_data.h"
 
-// Half a second of data to be buffered, represents roughly 200 neural data items
+// Half a second of data to be buffered represents roughly 200 neural data items
 #define FIFO_BUFFER_SIZE 300
 #define MAX_FIFO_DATA_SIZE 244
 
