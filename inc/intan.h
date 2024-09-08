@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <zephyr/kernel.h>
 #include "../inc/neural_data.h"
+#include "../inc/fifo_buffer.h"
 
 #define INTAN_THREAD_STACK_SIZE 8192
 

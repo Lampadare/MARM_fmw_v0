@@ -14,13 +14,30 @@ LOG_MODULE_REGISTER(fifo_buffer, LOG_LEVEL_INF);
 static int log_counter = 0;
 static float last_fill_percentage = 0;
 
-void init_fifo_buffer(fifo_buffer_t *fifo_buffer)
+int init_fifo_buffer(fifo_buffer_t *fifo_buffer)
 {
+    if (fifo_buffer == NULL)
+    {
+        return -EINVAL; // Invalid argument
+    }
+
     fifo_buffer->head = 0;
     fifo_buffer->tail = 0;
     fifo_buffer->size = 0;
-    k_mutex_init(&fifo_buffer->mutex);
-    k_sem_init(&fifo_buffer->data_available, 0, 1); // Initialize semaphore
+
+    int ret = k_mutex_init(&fifo_buffer->mutex);
+    if (ret != 0)
+    {
+        return ret; // Return the error code from mutex initialization
+    }
+
+    ret = k_sem_init(&fifo_buffer->data_available, 0, 1);
+    if (ret != 0)
+    {
+        return ret; // Return the error code from semaphore initialization
+    }
+
+    return 0; // Success
 }
 
 size_t read_from_fifo_buffer(fifo_buffer_t *fifo_buffer, NeuralData *data, size_t max_size)

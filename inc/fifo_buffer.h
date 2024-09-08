@@ -22,7 +22,7 @@ typedef struct
     struct k_sem data_available; // Semaphore to signal data availability
 } fifo_buffer_t;
 
-void init_fifo_buffer(fifo_buffer_t *fifo_buffer);
+int init_fifo_buffer(fifo_buffer_t *fifo_buffer);
 size_t read_from_fifo_buffer(fifo_buffer_t *fifo_buffer, NeuralData *data, size_t max_size);
 size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, size_t size);
 int get_fifo_fill_percentage(fifo_buffer_t *fifo_buffer);

@@ -73,9 +73,10 @@ static void spi_init(void);
 static uint16_t spi_trans(uint16_t command);
 static uint16_t spi_trans_wait(uint16_t command);
 static bool spi_check(void);
-extern int intan_init(void);
+static int RHD2232_init(void);
 static void RHD_handler(struct k_work *work);
 static void my_timer_handler(struct k_timer *dummy);
+extern int intan_init(fifo_buffer_t *fifo_buffer);
 
 // SPI initialization
 static void spi_init(void)
@@ -128,7 +129,7 @@ static bool spi_check(void)
 }
 
 // RHD initialization function
-static int intan_init(void)
+static int RHD2232_init(void)
 {
     static const uint16_t Register_config[18] = {Register0, Register1, Register2, Register3, Register4, Register5, Register6, Register7,
                                                  Register8, Register9, Register10, Register11, Register12, Register13, Register14, Register15,
@@ -214,32 +215,30 @@ void my_timer_handler(struct k_timer *dummy)
     k_work_submit_to_queue(&intan_work_q, &rhd_work.work);
 }
 
-// Main intan thread function
-void intan_thread(void *arg1, void *arg2, void *arg3)
+int intan_init(fifo_buffer_t *fifo_buffer)
 {
-    fifo_buffer_t *fifo_buffer = (fifo_buffer_t *)arg1;
-    start_time = k_uptime_get();
-
-    LOG_INF("Intan thread starting...");
+    LOG_INF("Intan initialization starting...");
     LOG_INF("spi2 %s", DT_NODE_HAS_STATUS(DT_NODELABEL(spi2), okay) ? "found" : "not found");
     LOG_INF("RHD2232 %s", DT_NODE_HAS_STATUS(DT_NODELABEL(rhd2232), okay) ? "found" : "not found");
 
-    // Initialize the custom work queue with even higher priority
+    // Initialize the custom work queue with high priority
     k_work_queue_init(&intan_work_q);
     k_work_queue_start(&intan_work_q, intan_work_q_stack,
                        K_THREAD_STACK_SIZEOF(intan_work_q_stack),
                        INTAN_WORK_Q_PRIORITY, NULL);
 
-    // Initialize work, timer, and SPI
+    // Initialize work and timer
     k_work_init(&rhd_work.work, RHD_handler);
     rhd_work.fifo_buffer = fifo_buffer;
     k_timer_init(&RHD_timer, my_timer_handler, NULL);
+
+    // Initialize SPI
     spi_init();
 
     // Initialize RHD2232
     for (int retry_count = 0; retry_count < 5; retry_count++)
     {
-        if (intan_init() == 0)
+        if (RHD2232_init() == 0)
         {
             RHD_init = true;
             break;
@@ -251,10 +250,22 @@ void intan_thread(void *arg1, void *arg2, void *arg3)
     if (!RHD_init)
     {
         LOG_ERR("Max retries reached. Initialization failed.");
-        return;
+        return -1;
     }
 
-    // Start timer
+    LOG_INF("Intan initialization complete");
+    return 0;
+}
+
+// Main intan thread function
+void intan_thread(void *arg1, void *arg2, void *arg3)
+{
+    fifo_buffer_t *fifo_buffer = (fifo_buffer_t *)arg1;
+    start_time = k_uptime_get();
+
+    LOG_INF("Intan thread starting...");
+
+    // Start timer to begin sampling
     k_timer_start(&RHD_timer, K_SECONDS(3), K_USEC(1000000 / SAMPLE_RATE_HZ));
 
     // // Main loop

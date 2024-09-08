@@ -287,7 +287,25 @@ int main(void)
 
 	// Initialize FIFO buffer ============================================================
 	LOG_INF("Initializing FIFO buffer...");
-	init_fifo_buffer(&fifo_buffer);
+	err = init_fifo_buffer(&fifo_buffer);
+	if (err)
+	{
+		LOG_ERR("FIFO buffer initialization failed (err %d)", err);
+		sys_reboot(SYS_REBOOT_COLD);
+		return -1;
+	}
+	LOG_INF("FIFO buffer initialized successfully");
+	k_sleep(K_MSEC(100));
+
+	// Initialize Intan ============================================================
+	err = intan_init(&fifo_buffer);
+	if (err)
+	{
+		LOG_ERR("Intan initialization failed (err %d)", err);
+		sys_reboot(SYS_REBOOT_COLD);
+		return -1;
+	}
+	LOG_INF("Intan initialized successfully");
 	k_sleep(K_MSEC(100));
 
 	LOG_INF("=======!!! All systems initialized !!!======= \n");
