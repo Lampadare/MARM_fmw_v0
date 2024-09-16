@@ -16,7 +16,16 @@ LOG_MODULE_REGISTER(intan_tests, LOG_LEVEL_DBG);
 K_THREAD_STACK_DEFINE(intan_work_q_stack, INTAN_WORK_Q_STACK_SIZE);
 static struct k_work_q intan_work_q;
 
-#define SAMPLE_RATE_HZ 130
+#define SAMPLE_RATE_HZ 250
+// 100
+// 250
+// 500
+// 750
+// 1000
+// 1200
+// 1500
+// 2000
+// 2500
 #define CHANNEL_COUNT 16
 #define COMMAND_COUNT (CHANNEL_COUNT + 3)
 
@@ -30,25 +39,49 @@ static uint16_t T_result[COMMAND_COUNT];
 #define CALIBRATE 0x5500
 #define CLEAR 0x6A00
 
-// Register configuration
-#define Register0 0x80DE  // Keep as is
-#define Register1 0x8120  // Set ADC buffer bias to 32 (0x20)
-#define Register2 0x8228  // Set MUX bias to 40 (0x28)
-#define Register3 0x8302  // Keep as is
-#define Register4 0x84B0  // Keep as is, but consider enabling DSP (see note below)
-#define Register5 0x8500  // Keep as is
-#define Register6 0x8600  // Keep as is
-#define Register7 0x8700  // Keep as is
-#define Register8 0x882C  // Set RH1 DAC1 to 44 (0x2C)
-#define Register9 0x8911  // Set RH1 DAC2 to 17 (0x11)
-#define Register10 0x8A08 // Set RH2 DAC1 to 8 (0x08)
-#define Register11 0x8B15 // Set RH2 DAC2 to 21 (0x15)
+// Register configuration ==========================================================================================
+#define Register0 0x80DE // Keep as is
+#define Register1 0x8120 // Set ADC buffer bias to 32 (0x20)
+#define Register2 0x8228 // Set MUX bias to 40 (0x28)
+#define Register3 0x8302 // Keep as is
+#define Register4 0x84C0 // Enable two's complement, disable absolute value mode, disable DSP
+
+// Impedance check configuration (if needed)
+#define Register5 0x8500 // Keep as is
+#define Register6 0x8600 // Keep as is
+#define Register7 0x8700 // Keep as is
+
+// Amplifier bandwidth configuration options
+// Option 1: Wide bandwidth (1 Hz - 7.5 kHz)
+// #define Register8 0x882C  // Set RH1 DAC1 to 44 (0x2C)
+// #define Register9 0x8911  // Set RH1 DAC2 to 17 (0x11)
+// #define Register10 0x8A08 // Set RH2 DAC1 to 8 (0x08)
+// #define Register11 0x8B15 // Set RH2 DAC2 to 21 (0x15)
+// #define Register12 0x8C10 // Set RL DAC1 to 16 (0x10)
+// #define Register13 0x8D3C // Set RL DAC2 to 60 (0x3C) and RL DAC3 to 1 (0x01)
+
+// Option 2: Medium bandwidth (1 Hz - 1 kHz)
+// #define Register8 0x8846  // Set RH1 DAC1 to 70 (0x46)
+// #define Register9 0x8902  // Set RH1 DAC2 to 2 (0x02)
+// #define Register10 0x8A1E // Set RH2 DAC1 to 30 (0x1E)
+// #define Register11 0x8B03 // Set RH2 DAC2 to 3 (0x03)
+// #define Register12 0x8C10 // Set RL DAC1 to 16 (0x10)
+// #define Register13 0x8D3C // Set RL DAC2 to 60 (0x3C) and RL DAC3 to 1 (0x01)
+
+// Option 3: Narrow bandwidth (1 Hz - 300 Hz)
+#define Register8 0x8806  // Set RH1 DAC1 to 6 (0x06)
+#define Register9 0x8909  // Set RH1 DAC2 to 9 (0x09)
+#define Register10 0x8A02 // Set RH2 DAC1 to 2 (0x02)
+#define Register11 0x8B0B // Set RH2 DAC2 to 11 (0x0B)
 #define Register12 0x8C10 // Set RL DAC1 to 16 (0x10)
 #define Register13 0x8D3C // Set RL DAC2 to 60 (0x3C) and RL DAC3 to 1 (0x01)
-#define Register14 0x8EFF // Keep as is
-#define Register15 0x8FFF // Keep as is
-#define Register16 0x90FF // Keep as is
-#define Register17 0x91FF // Keep as is
+
+// Power up/down configuration
+#define Register14 0x8EFF // Power up channels 0-7 (11111111 in binary)
+#define Register15 0x8FFF // Power up channels 8-15 (11111111 in binary)
+#define Register16 0x9000 // Power down channels 16-23 (00000000 in binary)
+#define Register17 0x9100 // Power down channels 24-31 (00000000 in binary)
+// ================================================================================================================
 
 // SPI configuration
 #define SPIOP SPI_WORD_SET(8) | SPI_TRANSFER_MSB

@@ -14,7 +14,6 @@ def plot_chunk(ax, time, data, channel, color):
 def plot_neural_data(csv_file, chunk_size=1000000, duration=1):
     # Create subplots
     fig1, axs = plt.subplots(4, 4, figsize=(20, 15), sharex=True)
-    fig1.suptitle('All Neural Data Channels (Last 1 second)', fontsize=16)
     
     # Flatten axs for easier indexing
     axs_flat = axs.flatten()
@@ -46,6 +45,9 @@ def plot_neural_data(csv_file, chunk_size=1000000, duration=1):
     
     # Calculate the start time for the last 1 second
     start_time = max(0, total_duration - duration)
+    
+    # Update plot titles with total duration
+    fig1.suptitle(f'All Neural Data Channels (Last 1 second, Total Duration: {total_duration:.2f} s)', fontsize=16)
     
     # Second pass: plot the last 1 second of data
     for chunk in pd.read_csv(csv_file, chunksize=chunk_size):
@@ -81,7 +83,7 @@ def plot_neural_data(csv_file, chunk_size=1000000, duration=1):
     fig1.text(0.5, 0.04, 'Time (seconds)', ha='center', va='center')
     ax_ch10.set_xlabel('Time (seconds)')
     ax_ch10.set_ylabel('Amplitude (μV)')
-    ax_ch10.set_title('Channel 10 Data (Last 1 second)', fontsize=16)
+    ax_ch10.set_title(f'Channel 10 Data (Last 1 second, Total Duration: {total_duration:.2f} s)', fontsize=16)
     
     # Add caption with average spacing
     caption = f'Average spacing between data points: {avg_spacing_ms:.3f} ms'

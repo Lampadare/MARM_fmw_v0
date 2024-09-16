@@ -10,7 +10,16 @@
 #include "../inc/neural_data.h"
 #include "../inc/fifo_buffer.h"
 
-#define SAMPLE_RATE_HZ 130
+#define SAMPLE_RATE_HZ 2000
+// 100
+// 250
+// 500
+// 750
+// 1000
+// 1200
+// 1500
+// 2000
+// 2500
 
 // Registering the module with the logging system
 LOG_MODULE_REGISTER(fakedata, LOG_LEVEL_INF);
@@ -65,6 +74,6 @@ void fakedata_thread(void *arg1, void *arg2, void *arg3)
 
         counter = (counter + 1) % 60000; // Increment counter from 0 to 60000
 
-        k_sleep(K_MSEC(1000 / SAMPLE_RATE_HZ));
+        k_sleep(K_USEC(1000000 / SAMPLE_RATE_HZ));
     }
 }

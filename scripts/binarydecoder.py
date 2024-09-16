@@ -3,9 +3,11 @@ import csv
 import os
 import argparse
 import glob
+import numpy as np
 
 # Constants from neural_data.h
 MAX_CHANNELS = 16
+ADC_SCALE_FACTOR = 0.195  # typical scale factor RHD2000 in µV/bit
 
 def decode_binary_files(input_folder, output_file):
     with open(output_file, 'w', newline='') as csv_file:
@@ -34,11 +36,14 @@ def decode_binary_files(input_folder, output_file):
                         break
                     
                     # Unpack the binary data
-                    channel_data = struct.unpack('<16H', binary_data[:32])  # 16 unsigned shorts (16-bit), little-endian
+                    channel_data = struct.unpack('<16h', binary_data[:32])  # 16 signed shorts (16-bit), little-endian
                     timestamp = struct.unpack('<I', binary_data[32:])[0]  # 32-bit unsigned int, little-endian
                     
+                    # Convert two's complement to signed integers and apply scaling factor
+                    channel_data = [value * ADC_SCALE_FACTOR for value in channel_data]
+                    
                     # Prepare row data
-                    row = [timestamp] + list(channel_data)
+                    row = [timestamp] + channel_data
                     
                     # Write to CSV
                     csv_writer.writerow(row)

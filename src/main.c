@@ -20,7 +20,7 @@
 static struct bt_le_adv_param *adv_param = BT_LE_ADV_PARAM(
 	(BT_LE_ADV_OPT_CONNECTABLE |
 	 BT_LE_ADV_OPT_USE_IDENTITY), /* Connectable advertising and use identity address */
-	800,						  /* Min Advertising Interval 500ms (800*0.625ms) */
+	40,							  /* Min Advertising Interval 500ms (800*0.625ms) */
 	801,						  /* Max Advertising Interval 500.625ms (801*0.625ms) */
 	NULL);						  /* Set to NULL for undirected advertising */
 
@@ -32,8 +32,8 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define STATUS_NOTIFY_PRIORITY 8
 #define SD_CARD_THREAD_PRIORITY 3
 #define NEURAL_DATA_NOTIFY_PRIORITY 4
-#define FAKEDATA_THREAD_PRIORITY 3
-#define INTAN_THREAD_PRIORITY 1
+#define FAKEDATA_THREAD_PRIORITY 0
+#define INTAN_THREAD_PRIORITY 0
 
 #define NEURAL_DATA_NOTIFY_STACK_SIZE 8192
 #define SYSTEM_STATUS_NOTIFY_STACK_SIZE 8192
@@ -239,18 +239,6 @@ int main(void)
 	k_sleep(K_MSEC(100));
 	LOG_INF("Marmoset FMW V0 \n");
 
-	// Initialize SD card ============================================================
-	LOG_INF("Initializing SD card...");
-	err = sd_card_init();
-	if (err)
-	{
-		LOG_ERR("SD card initialization failed (err %d)", err);
-		sys_reboot(SYS_REBOOT_COLD);
-		return -1;
-	}
-	LOG_INF("SD card initialized");
-	k_sleep(K_MSEC(100));
-
 	// Initialize Bluetooth ============================================================
 	err = bt_enable(NULL);
 	if (err)
@@ -283,6 +271,18 @@ int main(void)
 		return -1;
 	}
 	LOG_INF("Bluetooth connection established");
+	k_sleep(K_MSEC(100));
+
+	// Initialize SD card ============================================================
+	LOG_INF("Initializing SD card...");
+	err = sd_card_init();
+	if (err)
+	{
+		LOG_ERR("SD card initialization failed (err %d)", err);
+		sys_reboot(SYS_REBOOT_COLD);
+		return -1;
+	}
+	LOG_INF("SD card initialized");
 	k_sleep(K_MSEC(100));
 
 	// Initialize FIFO buffer ============================================================
@@ -325,22 +325,22 @@ int main(void)
 					STATUS_NOTIFY_PRIORITY, 0, K_MSEC(1000));
 	LOG_INF("Status notify thread created");
 
+	k_thread_create(&sd_card_thread_data, sd_card_stack,
+					SD_CARD_THREAD_STACK_SIZE,
+					sd_card_writer_thread, &fifo_buffer, NULL, NULL,
+					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(2000));
+	LOG_INF("SD card writer thread created");
+
 	// k_thread_create(&fakedata_thread_data, fakedata_stack,
 	// 				FAKEDATA_THREAD_STACK_SIZE,
 	// 				fakedata_thread, &fifo_buffer, NULL, NULL,
 	// 				FAKEDATA_THREAD_PRIORITY, 0, K_MSEC(10000));
 	// LOG_INF("Fakedata thread created");
 
-	k_thread_create(&sd_card_thread_data, sd_card_stack,
-					SD_CARD_THREAD_STACK_SIZE,
-					sd_card_writer_thread, &fifo_buffer, NULL, NULL,
-					SD_CARD_THREAD_PRIORITY, 0, K_MSEC(10000));
-	LOG_INF("SD card writer thread created");
-
 	k_thread_create(&intan_thread_data, intan_stack,
 					INTAN_THREAD_STACK_SIZE,
 					intan_thread, &fifo_buffer, NULL, NULL,
-					INTAN_THREAD_PRIORITY, 0, K_MSEC(10500));
+					INTAN_THREAD_PRIORITY, 0, K_MSEC(2500));
 	LOG_INF("Intan thread created");
 
 	LOG_INF("=======!!! All threads created successfully !!!======= \n");

@@ -413,7 +413,7 @@ int find_highest_session_number(void)
     int highest_session = 0;
     struct fs_dir_t dirp;
     struct fs_dirent entry;
-    char *prefix = "session_";
+    char *prefix = "f_session_";
     int prefix_len = strlen(prefix);
     int ret;
 
@@ -571,7 +571,7 @@ int sd_card_init(void)
     // Create a new folder for this session
     uint32_t new_session = highest_session + 1;
     snprintf(current_data_folder, sizeof(current_data_folder),
-             "%s/session_%u", sd_root_path, new_session);
+             "%s/f_session_%u", sd_root_path, new_session);
 
     LOG_INF("Attempting to create directory: %s", current_data_folder);
     ret = create_directory(current_data_folder);
