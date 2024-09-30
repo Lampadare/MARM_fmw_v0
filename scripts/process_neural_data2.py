@@ -594,8 +594,8 @@ def plot_combined_throughput_packet_loss(data, output_folder):
 
         for config in data['throughput']:
             sf_sorted = sorted(data['throughput'][config].keys())
-            throughput = [data['throughput'][config][sf]['actual'] for sf in sf_sorted]
-            packet_loss = [data['packet_loss'][config][sf] for sf in sf_sorted]
+            throughput = [data['throughput'][config][sf]['actual'] / 10 for sf in sf_sorted]
+            packet_loss = [data['packet_loss'][config][sf] / 10 for sf in sf_sorted]
 
             marker_style = 's' if config in BLE_CONFIGS else 'o'
             plt.plot(sf_sorted, throughput, marker=marker_style, color=CONFIG_COLORS.get(config, 'grey'), label=f'{config} Throughput')
@@ -673,9 +673,9 @@ def plot_system_stability(stability_data, output_folder):
         plt.figure(figsize=(12, 8))
         bars = plt.bar(configurations, frequencies, color=[CONFIG_COLORS.get(config, 'grey') for config in configurations])
 
-        plt.xlabel('Configuration', fontsize=18)
-        plt.ylabel('Highest Stable Sampling Frequency (Hz)', fontsize=18)
-        plt.title('System Stability Analysis', fontsize=20)
+        plt.xlabel('Configuration', fontsize=24)
+        plt.ylabel('Highest Stable Sampling Frequency (Hz)', fontsize=24)
+        plt.title('System Stability Analysis', fontsize=26)
         max_freq = max(frequencies) if frequencies else 1
         plt.ylim(0, max_freq * 1.2)
         plt.grid(axis='y')
@@ -686,8 +686,8 @@ def plot_system_stability(stability_data, output_folder):
             annotation = f'{freq} Hz' if freq > 0 else 'N/A'
             plt.text(bar.get_x() + bar.get_width() / 2, height, annotation, ha='center', va='bottom', fontsize=16)
 
-        plt.xticks(rotation=45, ha='right', fontsize=16)
-        plt.yticks(fontsize=16)
+        plt.xticks(rotation=45, ha='right', fontsize=22)
+        plt.yticks(fontsize=22)
         plt.tight_layout()
         plt.savefig(os.path.join(output_folder, 'system_stability_analysis.png'))
         plt.close()

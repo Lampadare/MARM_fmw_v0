@@ -45,7 +45,7 @@ Section Headers:
   [21] k_fifo_area       PROGBITS        20000db8 0383c8 000030 00  WA  0   0  4
   [22] net_buf_pool_area PROGBITS        20000de8 0383f8 000108 00  WA  0   0  4
   [23] bss               NOBITS          20000ef0 038570 00925f 00  WA  0   0  8
-  [24] noinit            NOBITS          2000a180 038570 0157e0 00  WA  0   0 128
+  [24] noinit            NOBITS          2000a180 038570 014fe0 00  WA  0   0 128
   [25] .comment          PROGBITS        00000000 038504 000060 01  MS  0   0  1
   [26] .debug_aranges    PROGBITS        00000000 038568 003ce0 00      0   0  8
   [27] .debug_info       PROGBITS        00000000 03c248 24ec66 00      0   0  1
@@ -72,7 +72,7 @@ Program Headers:
   LOAD           0x000100 0x00000000 0x00000000 0x3750c 0x3750c RWE 0x10
   LOAD           0x037610 0x20000000 0x0003750c 0x00ef0 0x00ef0 RW  0x8
   LOAD           0x038500 0x000383fc 0x000383fc 0x00004 0x00004 R   0x1
-  LOAD           0x000000 0x20000ef0 0x20000ef0 0x00000 0x1ea70 RW  0x80
+  LOAD           0x000000 0x20000ef0 0x20000ef0 0x00000 0x1e270 RW  0x80
   TLS            0x032784 0x00032684 0x00032684 0x00000 0x00008 R   0x4
 
  Section to Segment mapping:
