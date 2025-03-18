@@ -1,0 +1,34 @@
+{
+  "folders": [
+	{
+		"path": "."
+	},
+	{
+		"path": "../fmw_tests/intan_tests"
+	}
+],
+  "settings": {
+    "nrf-connect.applications": [
+      "${workspaceFolder}",
+      "/Users/Martin/Desktop/HBR/Masters/fmw_tests/intan_tests"
+    ],
+    "files.associations": {
+      "log.h": "c",
+      "neural_data.h": "c",
+      "uuid.h": "c",
+      "hci.h": "c",
+      "types.h": "c",
+      "fifo_buffer.h": "c",
+      "devicetree.h": "c",
+      "fs.h": "c",
+      "sdhc.h": "c",
+      "cstdio": "c",
+      "spi.h": "c",
+      "stdint.h": "c",
+      "stddef.h": "c"
+    },
+    "nrf-connect.debugging.bindings": {
+      "/Users/Martin/Desktop/HBR/Masters/fmw_tests/intan_tests/build": "Launch intan_tests/build"
+    }
+  }
+}

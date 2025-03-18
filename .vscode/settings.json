@@ -9,6 +9,7 @@
     "fifo_buffer.h": "c",
     "devicetree.h": "c",
     "fs.h": "c",
-    "sdhc.h": "c"
+    "sdhc.h": "c",
+    "neuralbs.h": "c"
   }
 }

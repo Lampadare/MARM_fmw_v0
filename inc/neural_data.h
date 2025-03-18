@@ -1,4 +1,6 @@
+// Marmoset FMW V0
 // neural_data.h
+
 #ifndef NEURAL_DATA_H
 #define NEURAL_DATA_H
 

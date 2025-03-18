@@ -1192,7 +1192,7 @@ zephyr_udc0: &usbd {
  status = "okay";
 };
 # 0 "<command-line>" 2
-# 1 "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/boards/nrf52840dk_nrf52840.overlay" 1
+# 1 "./boards/nrf52840dk_nrf52840.overlay" 1
 &qspi {
     status = "disabled";
     label = "QSPI";

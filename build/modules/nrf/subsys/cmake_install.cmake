@@ -39,31 +39,31 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/bluetooth/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/bluetooth/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/net/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/net/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/dfu/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/dfu/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/mpsl/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/mpsl/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/shell/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/shell/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/debug/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/subsys/debug/cmake_install.cmake")
 endif()
 

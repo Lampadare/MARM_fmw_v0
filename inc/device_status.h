@@ -1,4 +1,6 @@
+// Marmoset FMW V0
 // device_status.h
+
 #ifndef DEVICE_STATUS_H
 #define DEVICE_STATUS_H
 

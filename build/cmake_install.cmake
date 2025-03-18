@@ -1,4 +1,4 @@
-# Install script for directory: /Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0
+# Install script for directory: /Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/zephyr/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/zephyr/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

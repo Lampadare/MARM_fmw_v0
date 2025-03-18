@@ -1,7 +1,7 @@
-/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.dts
-/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.modules
-/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.shield
-/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.shield.defconfig
+/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.dts
+/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.modules
+/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.shield
+/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/Kconfig/Kconfig.shield.defconfig
 /opt/nordic/ncs/toolchains/580e4ef81c/opt/zephyr-sdk/cmake/zephyr/Kconfig
 /opt/nordic/ncs/v2.6.1/modules/hal/cirrus-logic/Kconfig
 /opt/nordic/ncs/v2.6.1/modules/lib/chre/platform/zephyr/Kconfig

@@ -39,11 +39,11 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/modules/hostap/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/modules/hostap/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/Martin/Desktop/HBR/Masters/MARM_fmw_v0/build/modules/nrf/modules/wfa-qt/cmake_install.cmake")
+  include("/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/modules/nrf/modules/wfa-qt/cmake_install.cmake")
 endif()
 

@@ -1,3 +1,6 @@
+// Marmoset FMW V0
+// main.c
+
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/bluetooth.h>
@@ -273,17 +276,17 @@ int main(void)
 	LOG_INF("Bluetooth connection established");
 	k_sleep(K_MSEC(100));
 
-	// Initialize SD card ============================================================
-	LOG_INF("Initializing SD card...");
-	err = sd_card_init();
-	if (err)
-	{
-		LOG_ERR("SD card initialization failed (err %d)", err);
-		sys_reboot(SYS_REBOOT_COLD);
-		return -1;
-	}
-	LOG_INF("SD card initialized");
-	k_sleep(K_MSEC(100));
+	// Initialize SD card ============================================================ (commented out for first in-vivo, NO SD YET)
+	// LOG_INF("Initializing SD card...");
+	// err = sd_card_init();
+	// if (err)
+	// {
+	// 	LOG_ERR("SD card initialization failed (err %d)", err);
+	// 	sys_reboot(SYS_REBOOT_COLD);
+	// 	return -1;
+	// }
+	// LOG_INF("SD card initialized");
+	// k_sleep(K_MSEC(100));
 
 	// Initialize FIFO buffer ============================================================
 	LOG_INF("Initializing FIFO buffer...");

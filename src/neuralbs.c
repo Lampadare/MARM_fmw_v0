@@ -1,6 +1,5 @@
-/** @file
- *  @brief Neural Bluetooth Service (NBS) sample
- */
+// Marmoset FMW V0
+// neuralbs.c
 
 #include <zephyr/types.h>
 #include <stddef.h>
