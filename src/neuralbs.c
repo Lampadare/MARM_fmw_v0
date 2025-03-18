@@ -18,21 +18,12 @@
 #include "../inc/neuralbs.h"
 #include "../inc/neural_data.h"
 #include "../inc/device_status.h"
-
-#define BLE_PAYLOAD_MAX 244
-#define MAX_NEURAL_SAMPLES_PER_BLE 6
+#include "../inc/ble_module.h"
 
 LOG_MODULE_DECLARE(Neural_Bluetooth_Service);
 
 static bool notify_neural_data_enabled;
 static bool notify_device_status_enabled;
-
-static ssize_t read_neural_data(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-                                void *buf, uint16_t len, uint16_t offset)
-{
-    const char *value = (const char *)attr->user_data;
-    return bt_gatt_attr_read(conn, attr, buf, len, offset, value, strlen(value));
-}
 
 /* Implement the configuration change callback function for device status characteristic */
 static void nbs_neural_data_ccc_cfg_changed(const struct bt_gatt_attr *attr,
@@ -54,11 +45,11 @@ BT_GATT_SERVICE_DEFINE(
 
     BT_GATT_CHARACTERISTIC(
         BT_UUID_NBS_NEURAL_DATA,
-        BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
-        BT_GATT_PERM_READ | BT_GATT_PERM_NONE,
-        read_neural_data,
+        BT_GATT_CHRC_NOTIFY,
+        BT_GATT_PERM_NONE,
         NULL,
-        &latest_neural_data.data),
+        NULL,
+        NULL),
 
     BT_GATT_CCC(nbs_neural_data_ccc_cfg_changed,
                 BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),

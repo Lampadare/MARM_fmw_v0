@@ -16,13 +16,4 @@ typedef struct
     uint32_t timestamp;
 } NeuralData;
 
-// Declare the global variable
-typedef struct
-{
-    NeuralData data;
-    bool sent;
-} LatestNeuralData;
-
-extern LatestNeuralData latest_neural_data;
-
 #endif // NEURAL_DATA_H

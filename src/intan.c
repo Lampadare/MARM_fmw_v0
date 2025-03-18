@@ -237,10 +237,6 @@ static void RHD_handler(struct k_work *work)
     {
         LOG_ERR("Failed to write neural data to FIFO buffer.");
     }
-
-    // Update the global latest_neural_data
-    latest_neural_data.data = sample;
-    latest_neural_data.sent = false;
 }
 
 // Timer handler

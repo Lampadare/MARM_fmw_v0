@@ -14,6 +14,7 @@ target_sources(app PRIVATE
   src/fifo_buffer.c
   src/sd_card.c
   src/intan.c
+  src/ble_module.c
 )
 
 # NORDIC SDK APP END

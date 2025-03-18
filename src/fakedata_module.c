@@ -63,10 +63,6 @@ void fakedata_thread(void *arg1, void *arg2, void *arg3)
             LOG_ERR("Failed to write neural data to FIFO buffer.");
         }
 
-        // Update the global latest_neural_data variable
-        latest_neural_data.data = data;
-        latest_neural_data.sent = false;
-
         if (log_counter++ % 100 == 0)
         {
             LOG_INF("Faked data written to fifo buffer: timestamp %d, value %d",

@@ -116,6 +116,16 @@ build CMakeFiles/app.dir/src/intan.c.obj: C_COMPILER__app_ /Users/Martin/Desktop
   TARGET_COMPILE_PDB = CMakeFiles/app.dir/app.pdb
   TARGET_PDB = app/libapp.pdb
 
+build CMakeFiles/app.dir/src/ble_module.c.obj: C_COMPILER__app_ /Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/src/ble_module.c || cmake_object_order_depends_target_app
+  DEFINES = -DKERNEL -DNRF52840_XXAA -DPICOLIBC_DOUBLE_PRINTF_SCANF -DZEPHYR_CONFIG_OVERRIDE=zephyr_fatfs_config.h -D_FORTIFY_SOURCE=1 -D_POSIX_C_SOURCE=200809 -D__LINUX_ERRNO_EXTENSIONS__ -D__PROGRAM_START -D__ZEPHYR__=1
+  DEP_FILE = CMakeFiles/app.dir/src/ble_module.c.obj.d
+  FLAGS = -fno-strict-aliasing -Os -imacros /Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/zephyr/include/generated/autoconf.h -fno-common -g -gdwarf-4 -fdiagnostics-color=always -mcpu=cortex-m4 -mthumb -mabi=aapcs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mfp16-format=ieee -mtp=soft --sysroot=/opt/nordic/ncs/toolchains/580e4ef81c/opt/zephyr-sdk/arm-zephyr-eabi/arm-zephyr-eabi -imacros /opt/nordic/ncs/v2.6.1/zephyr/include/zephyr/toolchain/zephyr_stdint.h -Wall -Wformat -Wformat-security -Wno-format-zero-length -Wno-pointer-sign -Wpointer-arith -Wexpansion-to-defined -Wno-unused-but-set-variable -Werror=implicit-int -fno-pic -fno-pie -fno-asynchronous-unwind-tables -ftls-model=local-exec -fno-reorder-functions --param=min-pagesize=0 -fno-defer-pop -fmacro-prefix-map=/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0=CMAKE_SOURCE_DIR -fmacro-prefix-map=/opt/nordic/ncs/v2.6.1/zephyr=ZEPHYR_BASE -fmacro-prefix-map=/opt/nordic/ncs/v2.6.1=WEST_TOPDIR -ffunction-sections -fdata-sections --specs=picolibc.specs -std=c99
+  INCLUDES = -I/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/inc -I/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/. -I/opt/nordic/ncs/v2.6.1/nrf/drivers/mpsl/clock_control -I/opt/nordic/ncs/v2.6.1/zephyr/include -I/Users/Martin/Desktop/WORK/HBR/Masters/MARM_fmw_v0/build/zephyr/include/generated -I/opt/nordic/ncs/v2.6.1/zephyr/soc/arm/nordic_nrf/nrf52 -I/opt/nordic/ncs/v2.6.1/zephyr/soc/common/nordic_nrf/. -I/opt/nordic/ncs/v2.6.1/zephyr/soc/arm/nordic_nrf/common/. -I/opt/nordic/ncs/v2.6.1/zephyr/subsys/bluetooth -I/opt/nordic/ncs/v2.6.1/nrf/include -I/opt/nordic/ncs/v2.6.1/nrf/lib/multithreading_lock/. -I/opt/nordic/ncs/v2.6.1/nrf/subsys/bluetooth/controller/. -I/opt/nordic/ncs/v2.6.1/nrf/tests/include -I/opt/nordic/ncs/v2.6.1/modules/hal/cmsis/CMSIS/Core/Include -I/opt/nordic/ncs/v2.6.1/zephyr/modules/cmsis/. -I/opt/nordic/ncs/v2.6.1/modules/hal/nordic/nrfx -I/opt/nordic/ncs/v2.6.1/modules/hal/nordic/nrfx/drivers/include -I/opt/nordic/ncs/v2.6.1/modules/hal/nordic/nrfx/mdk -I/opt/nordic/ncs/v2.6.1/zephyr/modules/hal_nordic/nrfx/. -I/opt/nordic/ncs/v2.6.1/modules/debug/segger/SEGGER -I/opt/nordic/ncs/v2.6.1/modules/debug/segger/Config -I/opt/nordic/ncs/v2.6.1/modules/crypto/tinycrypt/lib/include -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/fem/common/include -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/fem/nrf21540_gpio/include -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/fem/nrf21540_gpio_spi/include -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/fem/simple_gpio/include -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/fem/include -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/fem/include/protocol -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/include -I/opt/nordic/ncs/v2.6.1/nrfxlib/mpsl/include/protocol -I/opt/nordic/ncs/v2.6.1/nrfxlib/softdevice_controller/include -I/opt/nordic/ncs/v2.6.1/zephyr/modules/fatfs -I/opt/nordic/ncs/v2.6.1/modules/fs/fatfs/include -isystem /opt/nordic/ncs/v2.6.1/zephyr/lib/libc/common/include -isystem /opt/nordic/ncs/v2.6.1/nrfxlib/crypto/nrf_cc310_platform/include
+  OBJECT_DIR = CMakeFiles/app.dir
+  OBJECT_FILE_DIR = CMakeFiles/app.dir/src
+  TARGET_COMPILE_PDB = CMakeFiles/app.dir/app.pdb
+  TARGET_PDB = app/libapp.pdb
+
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target app
@@ -124,7 +134,7 @@ build CMakeFiles/app.dir/src/intan.c.obj: C_COMPILER__app_ /Users/Martin/Desktop
 #############################################
 # Link the static library app/libapp.a
 
-build app/libapp.a: C_STATIC_LIBRARY_LINKER__app_ CMakeFiles/app.dir/src/main.c.obj CMakeFiles/app.dir/src/neuralbs.c.obj CMakeFiles/app.dir/src/fakedata_module.c.obj CMakeFiles/app.dir/src/fifo_buffer.c.obj CMakeFiles/app.dir/src/sd_card.c.obj CMakeFiles/app.dir/src/intan.c.obj || zephyr/driver_validation_h_target zephyr/kobj_types_h_target zephyr/syscall_list_h_target zephyr/zephyr_generated_headers
+build app/libapp.a: C_STATIC_LIBRARY_LINKER__app_ CMakeFiles/app.dir/src/main.c.obj CMakeFiles/app.dir/src/neuralbs.c.obj CMakeFiles/app.dir/src/fakedata_module.c.obj CMakeFiles/app.dir/src/fifo_buffer.c.obj CMakeFiles/app.dir/src/sd_card.c.obj CMakeFiles/app.dir/src/intan.c.obj CMakeFiles/app.dir/src/ble_module.c.obj || zephyr/driver_validation_h_target zephyr/kobj_types_h_target zephyr/syscall_list_h_target zephyr/zephyr_generated_headers
   OBJECT_DIR = CMakeFiles/app.dir
   POST_BUILD = :
   PRE_LINK = :
