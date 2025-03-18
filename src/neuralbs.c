@@ -85,7 +85,7 @@ int nbs_send_neural_data_notify(NeuralData *neural_data, size_t count)
     else
     {
         // Aggregate multiple samples:
-        // Format: first byte is the count, then the array of NeuralData samples.
+        // Format: array of NeuralData samples + timestamp
         uint8_t payload[BLE_PAYLOAD_MAX];
         if (count > MAX_NEURAL_SAMPLES_PER_BLE)
         {
