@@ -41,6 +41,9 @@ LOG_MODULE_REGISTER(Marmoset_FMW, LOG_LEVEL_INF);
 #define NEURAL_DATA_NOTIFY_STACK_SIZE 8192
 #define SYSTEM_STATUS_NOTIFY_STACK_SIZE 8192
 
+#define BLE_PAYLOAD_MAX 244
+#define MAX_NEURAL_SAMPLES_PER_BLE 6
+
 #define SYSTEM_STATUS_NOTIFY_INTERVAL 1 // system status notify interval in seconds
 #define NEURAL_DATA_NOTIFY_INTERVAL 1	// neural data notify interval in milliseconds
 
@@ -134,14 +137,29 @@ void status_notify_thread(void *p1, void *p2, void *p3)
 
 void neural_data_notify_thread(void *p1, void *p2, void *p3)
 {
+	NeuralData samples[MAX_NEURAL_SAMPLES_PER_BLE];
+	size_t count = 0;
+	uint8_t payload[BLE_PAYLOAD_MAX];
+	size_t payload_len;
+
 	while (1)
 	{
-		// Check if there's new data to send
-		if (!latest_neural_data.sent)
+		// Wait until BLE data is available.
+		// Using K_NO_WAIT so that if nothing is available, we simply sleep briefly.
+		int ret = k_sem_take(&fifo_buffer.ble_data_available, K_NO_WAIT);
+		if (ret != 0)
 		{
-			nbs_send_neural_data_notify(&latest_neural_data.data);
-			latest_neural_data.sent = true; // Mark as sent
+			k_sleep(K_MSEC(NEURAL_DATA_NOTIFY_INTERVAL));
+			continue;
 		}
+
+		// Read up to MAX_NEURAL_SAMPLES_PER_BLE samples from the FIFO
+		count = read_from_fifo_buffer_ble(&fifo_buffer, samples, MAX_NEURAL_SAMPLES_PER_BLE);
+
+		// Send the samples to the BLE characteristic
+		nbs_send_neural_data_notify(samples, count);
+
+		// Sleep for the specified interval
 		k_sleep(K_MSEC(NEURAL_DATA_NOTIFY_INTERVAL));
 	}
 }

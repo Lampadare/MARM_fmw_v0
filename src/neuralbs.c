@@ -19,6 +19,9 @@
 #include "../inc/neural_data.h"
 #include "../inc/device_status.h"
 
+#define BLE_PAYLOAD_MAX 244
+#define MAX_NEURAL_SAMPLES_PER_BLE 6
+
 LOG_MODULE_DECLARE(Neural_Bluetooth_Service);
 
 static bool notify_neural_data_enabled;
@@ -72,16 +75,41 @@ BT_GATT_SERVICE_DEFINE(
                 BT_GATT_PERM_READ | BT_GATT_PERM_WRITE));
 
 /* Send notifications for the neural data characteristic */
-int nbs_send_neural_data_notify(NeuralData *neural_data)
+int nbs_send_neural_data_notify(NeuralData *neural_data, size_t count)
 {
     if (!notify_neural_data_enabled)
     {
         return -EACCES;
     }
 
-    return bt_gatt_notify(NULL, &my_lbs_svc.attrs[1],
-                          neural_data,
-                          sizeof(*neural_data));
+    if (count == 0)
+    {
+        return 0;
+    }
+    else if (count == 1)
+    {
+        // Send one NeuralData struct
+        return bt_gatt_notify(NULL, &my_lbs_svc.attrs[1], neural_data, sizeof(NeuralData));
+    }
+    else
+    {
+        // Aggregate multiple samples:
+        // Format: first byte is the count, then the array of NeuralData samples.
+        uint8_t payload[BLE_PAYLOAD_MAX];
+        if (count > MAX_NEURAL_SAMPLES_PER_BLE)
+        {
+            count = MAX_NEURAL_SAMPLES_PER_BLE;
+        }
+
+        size_t data_bytes = count * sizeof(NeuralData);
+        if (data_bytes > BLE_PAYLOAD_MAX)
+        {
+            data_bytes = BLE_PAYLOAD_MAX;
+            count = data_bytes / sizeof(NeuralData);
+        }
+        memcpy(payload, neural_data, data_bytes);
+        return bt_gatt_notify(NULL, &my_lbs_svc.attrs[1], payload, data_bytes);
+    }
 }
 
 /* Send notifications for the system status characteristic */

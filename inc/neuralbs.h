@@ -27,7 +27,7 @@ extern "C"
 #define BT_UUID_NBS_NEURAL_DATA BT_UUID_DECLARE_128(BT_UUID_NBS_NEURAL_DATA_VAL)
 #define BT_UUID_NBS_DEVICE_STATUS BT_UUID_DECLARE_128(BT_UUID_NBS_DEVICE_STATUS_VAL)
 
-    int nbs_send_neural_data_notify(NeuralData *latest_neural_data);
+    int nbs_send_neural_data_notify(NeuralData *latest_neural_data, size_t count);
     int nbs_send_system_status_notify(DeviceStatus *device_status);
 
 #ifdef __cplusplus

@@ -593,15 +593,14 @@ int sd_card_init(void)
     return 0;
 }
 
-// Static buffers to reduce stack usage
-static NeuralData data_buffer[MAX_NEURAL_DATA_PER_WRITE];
-static char filename[PATH_MAX_LEN + 1];
-
 void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
 {
     fifo_buffer_t *fifo_buffer = (fifo_buffer_t *)arg1;
     static uint32_t file_counter = 0;
     size_t data_count = 0;
+    // Static buffers to reduce stack usage, to hold NeuralData structs read from FIFO
+    static NeuralData data_buffer[MAX_NEURAL_DATA_PER_WRITE];
+    static char filename[PATH_MAX_LEN + 1];
 
     // Wait for SD card initialization
     while (!sd_init_success)
@@ -613,7 +612,7 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
     while (1)
     {
         // Wait for data to be available
-        int ret = k_sem_take(&fifo_buffer->data_available, K_MSEC(40));
+        int ret = k_sem_take(&fifo_buffer->sd_data_available, K_MSEC(40));
         if (ret != 0)
         {
             continue;
@@ -621,12 +620,12 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
 
         LOG_INF("Data sem taken, reading from FIFO buffer");
 
-        // Read data from FIFO buffer
-        size_t read_count = read_from_fifo_buffer(fifo_buffer, &data_buffer[data_count], MAX_NEURAL_DATA_PER_WRITE - data_count);
+        // Read data from FIFO buffer using the SD-specific function
+        size_t read_count = read_from_fifo_buffer_sd(fifo_buffer, &data_buffer[data_count], MAX_NEURAL_DATA_PER_WRITE - data_count);
+        // Update the data count
         data_count += read_count;
 
-        LOG_INF("Read %zu NeuralData structs from FIFO buffer now in data_count", read_count);
-        LOG_INF("Should we write: %d", (data_count == MAX_NEURAL_DATA_PER_WRITE));
+        LOG_INF("Read %zu NeuralData structs from FIFO buffer (data_count=%zu)", read_count, data_count);
 
         // Write to SD card if buffer is full or we've read all available data
         if (data_count == MAX_NEURAL_DATA_PER_WRITE || (read_count == 0 && data_count > 0))
@@ -635,7 +634,7 @@ void sd_card_writer_thread(void *arg1, void *arg2, void *arg3)
 
             size_t bytes_to_write = data_count * sizeof(NeuralData);
             LOG_INF("About to write %zu bytes to file: %s", bytes_to_write, filename);
-            int ret = sd_card_open_write_close(filename, data_buffer, &bytes_to_write); // TODO LOOK INTO THIS FUNCTION
+            int ret = sd_card_open_write_close(filename, (char const *)data_buffer, &bytes_to_write); // TODO LOOK INTO THIS FUNCTION
             if (ret != 0)
             {
                 LOG_ERR("Failed to write to SD card, err: %d", ret);
