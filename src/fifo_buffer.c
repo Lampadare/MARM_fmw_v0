@@ -15,6 +15,15 @@ LOG_MODULE_REGISTER(fifo_buffer, LOG_LEVEL_INF);
 static int log_counter = 0;
 static float last_fill_percentage = 0;
 
+// Data availability threshold for BLE and SD consumers.
+#define BLE_BUFFER_FILL_FLAG_STRUCTS 10
+#define SD_BUFFER_FILL_FLAG_STRUCTS 200
+
+/**
+ * @brief Initialize the FIFO buffer.
+ * Sets write index, both read indices, and resets the buffer sizes.
+ * Also sets the priority (here, default is set to BLE has priority).
+ */
 int init_fifo_buffer(fifo_buffer_t *fifo_buffer)
 {
     if (fifo_buffer == NULL)
@@ -22,9 +31,12 @@ int init_fifo_buffer(fifo_buffer_t *fifo_buffer)
         return -EINVAL; // Invalid argument
     }
 
-    fifo_buffer->head = 0;
-    fifo_buffer->tail = 0;
-    fifo_buffer->size = 0;
+    fifo_buffer->write_index = 0;
+    fifo_buffer->read_index_ble = 0;
+    fifo_buffer->read_index_sd = 0;
+    fifo_buffer->ble_buffer_size = 0;
+    fifo_buffer->sd_buffer_size = 0;
+    fifo_buffer->priority = FIFO_PRIORITY_BLE; // Set BLE as the priority consumer
 
     int ret = k_mutex_init(&fifo_buffer->mutex);
     if (ret != 0)
@@ -32,113 +44,167 @@ int init_fifo_buffer(fifo_buffer_t *fifo_buffer)
         return ret; // Return the error code from mutex initialization
     }
 
-    ret = k_sem_init(&fifo_buffer->data_available, 0, 1);
+    // Initialize semaphore for BLE data availability
+    ret = k_sem_init(&fifo_buffer->ble_data_available, 0, 1);
     if (ret != 0)
     {
-        return ret; // Return the error code from semaphore initialization
+        return ret;
+    }
+
+    // Initialize semaphore for SD data availability
+    ret = k_sem_init(&fifo_buffer->sd_data_available, 0, 1);
+    if (ret != 0)
+    {
+        return ret;
     }
 
     return 0; // Success
 }
 
-size_t read_from_fifo_buffer(fifo_buffer_t *fifo_buffer, NeuralData *data, size_t max_size)
-{
-    size_t structs_read = 0;
-    bool was_above_threshold = false;
-
-    int ret = k_mutex_lock(&fifo_buffer->mutex, K_NO_WAIT);
-    if (ret != 0)
-    {
-        LOG_WRN("Failed to acquire mutex, error: %d", ret);
-        k_mutex_unlock(&fifo_buffer->mutex);
-        return 0;
-    }
-
-    // Check if the buffer was above 50% before reading
-    was_above_threshold = fifo_buffer->size >= (FIFO_BUFFER_SIZE / 2);
-
-    while (structs_read < max_size && fifo_buffer->size > 0)
-    {
-        *data = fifo_buffer->buffer[fifo_buffer->head]; // get the pointer to the head in the buffer
-        fifo_buffer->head = (fifo_buffer->head + 1) % FIFO_BUFFER_SIZE;
-        fifo_buffer->size--;
-        data++;
-        structs_read++;
-    }
-
-    // In read_from_fifo_buffer and write_to_fifo_buffer:
-    int fill_percentage = (int)((fifo_buffer->size * 100) / FIFO_BUFFER_SIZE);
-    if (log_counter++ % 100 == 0 || (fill_percentage - last_fill_percentage > 5) || (last_fill_percentage - fill_percentage > 5))
-    {
-        LOG_INF("FIFO Buffer fill: %d%% (read %zu structs)", fill_percentage, structs_read);
-        last_fill_percentage = fill_percentage;
-    }
-
-    // Sem taken in SD card writer thread
-    // if (was_above_threshold && fifo_buffer->size < (FIFO_BUFFER_SIZE / 2))
-    // {
-    //     // Reset the semaphore when falling below 50% threshold
-    //     k_sem_take(&fifo_buffer->data_available, K_NO_WAIT);
-    //     LOG_INF("Buffer fell below 50 percent capacity, reset data availability signal");
-    // }
-
-    k_mutex_unlock(&fifo_buffer->mutex);
-
-    return structs_read;
-}
-
+/**
+ * @brief Write data to the FIFO buffer.
+ *
+ * @param fifo_buffer Pointer to the FIFO buffer.
+ * @param data Pointer to the data to write.
+ * @param size Number of elements to write.
+ */
 size_t write_to_fifo_buffer(fifo_buffer_t *fifo_buffer, const NeuralData *data, size_t size)
 {
     size_t structs_written = 0;
-    bool was_below_threshold = false;
-
-    int ret = k_mutex_lock(&fifo_buffer->mutex, K_NO_WAIT);
+    int ret = k_mutex_lock(&fifo_buffer->mutex, K_FOREVER);
     if (ret != 0)
     {
         LOG_WRN("Failed to acquire mutex, error: %d", ret);
-        k_mutex_unlock(&fifo_buffer->mutex);
         return 0;
     }
 
-    // Check if the buffer was below 50% before writing
-    was_below_threshold = fifo_buffer->size < (FIFO_BUFFER_SIZE / 2);
-
-    while (structs_written < size && fifo_buffer->size < FIFO_BUFFER_SIZE)
+    while (structs_written < size)
     {
-        fifo_buffer->buffer[fifo_buffer->tail] = *data;
-        fifo_buffer->tail = (fifo_buffer->tail + 1) % FIFO_BUFFER_SIZE;
-        fifo_buffer->size++;
-        data++;
+        size_t next_write_index = (fifo_buffer->write_index + 1) % FIFO_BUFFER_SIZE;
+
+        // Check for buffer full condition:
+        // If next write index equals either consumer's read index, the buffer is "full".
+        if (next_write_index == fifo_buffer->read_index_ble ||
+            next_write_index == fifo_buffer->read_index_sd)
+        {
+            // Decide which consumer to advance based on priority.
+            // If BLE has priority, discard from SD by advancing the SD read index.
+            // Otherwise, advance the BLE read index.
+            if (fifo_buffer->priority == FIFO_PRIORITY_BLE)
+            {
+                fifo_buffer->read_index_sd = (fifo_buffer->read_index_sd + 1) % FIFO_BUFFER_SIZE;
+            }
+            else
+            {
+                fifo_buffer->read_index_ble = (fifo_buffer->read_index_ble + 1) % FIFO_BUFFER_SIZE;
+            }
+            // After discarding, update the buffer sizes
+            fifo_buffer->sd_buffer_size = (fifo_buffer->write_index + FIFO_BUFFER_SIZE - fifo_buffer->read_index_sd) % FIFO_BUFFER_SIZE;
+            fifo_buffer->ble_buffer_size = (fifo_buffer->write_index + FIFO_BUFFER_SIZE - fifo_buffer->read_index_ble) % FIFO_BUFFER_SIZE;
+            // Continue without writing to free up a slot
+            continue;
+        }
+
+        // Write the sample to the buffer
+        fifo_buffer->buffer[fifo_buffer->write_index] = *data;
+        fifo_buffer->write_index = next_write_index;
         structs_written++;
+
+        // Update buffer sizes for each consumer
+        fifo_buffer->ble_buffer_size = (fifo_buffer->write_index + FIFO_BUFFER_SIZE - fifo_buffer->read_index_ble) % FIFO_BUFFER_SIZE;
+        fifo_buffer->sd_buffer_size = (fifo_buffer->write_index + FIFO_BUFFER_SIZE - fifo_buffer->read_index_sd) % FIFO_BUFFER_SIZE;
+
+        data++;
     }
 
-    // In read_from_fifo_buffer and write_to_fifo_buffer:
-    int fill_percentage = (int)((fifo_buffer->size * 100) / FIFO_BUFFER_SIZE);
-    if (log_counter++ % 100 == 0 || (fill_percentage - last_fill_percentage > 5) || (last_fill_percentage - fill_percentage > 5))
+    // Log buffer fill status
+    int fill_percentage = (int)(((fifo_buffer->ble_buffer_size > fifo_buffer->sd_buffer_size ? fifo_buffer->ble_buffer_size : fifo_buffer->sd_buffer_size) * 100) / FIFO_BUFFER_SIZE);
+    if (log_counter++ % 150 == 0 ||
+        (abs(fill_percentage - (int)last_fill_percentage) > 10))
     {
         LOG_INF("FIFO Buffer fill: %d%% (wrote %zu structs)", fill_percentage, structs_written);
         last_fill_percentage = fill_percentage;
     }
 
-    // if (structs_written < size)
-    // {
-    //     LOG_WRN("FIFO Buffer full, dropped %zu structs", size - structs_written);
-    // }
-
-    // Check if the buffer has reached or exceeded 50% capacity
-    if (fifo_buffer->size >= (FIFO_BUFFER_SIZE / 2))
+    // Signal data availability if threshold is reached.
+    // For example, if BLE unread count exceeds a given threshold.
+    if (fifo_buffer->ble_buffer_size >= BLE_BUFFER_FILL_FLAG_STRUCTS)
     {
-        // Signal that data is available only when crossing the 50% threshold
-        k_sem_give(&fifo_buffer->data_available);
-        LOG_INF("Buffer reached 50 percent capacity, signaled data availability");
+        k_sem_give(&fifo_buffer->ble_data_available);
+        LOG_INF("FIFO: BLE buffer reached threshold (%zu structs)", fifo_buffer->ble_buffer_size);
+    }
+    if (fifo_buffer->sd_buffer_size >= SD_BUFFER_FILL_FLAG_STRUCTS)
+    {
+        k_sem_give(&fifo_buffer->sd_data_available);
+        LOG_INF("FIFO: SD buffer reached threshold (%zu structs)", fifo_buffer->sd_buffer_size);
     }
 
     k_mutex_unlock(&fifo_buffer->mutex);
-
     return structs_written;
 }
 
+/**
+ * @brief Read data for the BLE consumer.
+ *
+ * Reads up to max_size NeuralData samples from the FIFO using the BLE read index.
+ */
+size_t read_from_fifo_buffer_ble(fifo_buffer_t *fifo_buffer, NeuralData *data, size_t max_size)
+{
+    // Initialize the number of structs read to 0.
+    size_t structs_read = 0;
+    // Lock the mutex to prevent race conditions.
+    k_mutex_lock(&fifo_buffer->mutex, K_FOREVER);
+    // Read the data from the buffer until the max size is reached or the buffer is empty.
+    while (structs_read < max_size && fifo_buffer->read_index_ble != fifo_buffer->write_index)
+    {
+        *data = fifo_buffer->buffer[fifo_buffer->read_index_ble];
+        fifo_buffer->read_index_ble = (fifo_buffer->read_index_ble + 1) % FIFO_BUFFER_SIZE;
+        structs_read++;
+        data++;
+    }
+    // Update the buffer size for the BLE consumer.
+    fifo_buffer->ble_buffer_size = (fifo_buffer->write_index + FIFO_BUFFER_SIZE - fifo_buffer->read_index_ble) % FIFO_BUFFER_SIZE;
+    // Unlock the mutex.
+    k_mutex_unlock(&fifo_buffer->mutex);
+    // Return the number of structs read.
+    return structs_read;
+}
+
+/**
+ * @brief Read data for the SD consumer.
+ *
+ * Reads up to max_size NeuralData samples from the FIFO using the SD read index.
+ */
+size_t read_from_fifo_buffer_sd(fifo_buffer_t *fifo_buffer, NeuralData *data, size_t max_size)
+{
+    // Initialize the number of structs read to 0.
+    size_t structs_read = 0;
+    // Lock the mutex to prevent race conditions.
+    k_mutex_lock(&fifo_buffer->mutex, K_FOREVER);
+    // Read the data from the buffer until the max size is reached or the buffer is empty.
+    while (structs_read < max_size && fifo_buffer->read_index_sd != fifo_buffer->write_index)
+    {
+        *data = fifo_buffer->buffer[fifo_buffer->read_index_sd];
+        fifo_buffer->read_index_sd = (fifo_buffer->read_index_sd + 1) % FIFO_BUFFER_SIZE;
+        structs_read++;
+        data++;
+    }
+    // Update the buffer size for the SD consumer.
+    fifo_buffer->sd_buffer_size = (fifo_buffer->write_index + FIFO_BUFFER_SIZE - fifo_buffer->read_index_sd) % FIFO_BUFFER_SIZE;
+    // Unlock the mutex.
+    k_mutex_unlock(&fifo_buffer->mutex);
+    // Return the number of structs read.
+    return structs_read;
+}
+
+/**
+ * @brief Get the fill percentage of the FIFO.
+ *
+ * This calculates the fill based on the slower (i.e. least advanced) consumer.
+ */
 int get_fifo_fill_percentage(fifo_buffer_t *fifo_buffer)
 {
-    return (fifo_buffer->size / FIFO_BUFFER_SIZE) * 100;
+    size_t slowest_index = fifo_buffer->read_index_ble <= fifo_buffer->read_index_sd ? fifo_buffer->read_index_ble : fifo_buffer->read_index_sd;
+    size_t total_elements = (fifo_buffer->write_index + FIFO_BUFFER_SIZE - slowest_index) % FIFO_BUFFER_SIZE;
+    return (total_elements * 100) / FIFO_BUFFER_SIZE;
 }
